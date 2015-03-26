@@ -2,19 +2,17 @@ package com.zackehh.floodz.lms;
 
 import corba.Alert;
 import corba.Reading;
-import corba.SensorPair;
+import corba.SensorTuple;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class LMSTest {
+public class LMSDriverTest {
 
-    private final LMS lms = new LMS();
+    private final LMSDriver lms = new LMSDriver();
 
     private enum Zones {
         BRADFORD,
@@ -74,7 +72,7 @@ public class LMSTest {
         Assert.assertNotNull(zone.get("1"));
         Assert.assertEquals(zone.get("1").measurement, 0);
 
-        lms.removeSensor(new SensorPair(Zones.HUDDERSFIELD.name(), "1"));
+        lms.removeSensor(new SensorTuple(Zones.HUDDERSFIELD.name(), "1"));
 
         Assert.assertNotNull(zone);
         Assert.assertEquals(zone.size(), 0);
@@ -93,7 +91,7 @@ public class LMSTest {
         Assert.assertNotNull(zone.get("1"));
         Assert.assertEquals(zone.get("1").measurement, 0);
 
-        lms.removeSensor(new SensorPair(Zones.HUDDERSFIELD.name(), "2"));
+        lms.removeSensor(new SensorTuple(Zones.HUDDERSFIELD.name(), "2"));
 
         Assert.assertNotNull(zone);
         Assert.assertEquals(zone.size(), 1);
@@ -101,7 +99,7 @@ public class LMSTest {
 
     @Test
     public void testRemoveSensorWithInvalidZone() throws Exception {
-        lms.removeSensor(new SensorPair(Zones.HUDDERSFIELD.name(), "1"));
+        lms.removeSensor(new SensorTuple(Zones.HUDDERSFIELD.name(), "1"));
     }
 
     @Test
@@ -118,7 +116,7 @@ public class LMSTest {
         lms.receiveAlert(
                 new Alert(
                         new Reading(System.currentTimeMillis(), 45),
-                        new SensorPair(Zones.HUDDERSFIELD.name(), "1")
+                        new SensorTuple(Zones.HUDDERSFIELD.name(), "1")
                 )
         );
 
@@ -132,7 +130,7 @@ public class LMSTest {
         lms.receiveAlert(
                 new Alert(
                         new Reading(System.currentTimeMillis(), 65),
-                        new SensorPair(Zones.HUDDERSFIELD.name(), "1")
+                        new SensorTuple(Zones.HUDDERSFIELD.name(), "1")
                 )
         );
 
@@ -149,7 +147,7 @@ public class LMSTest {
         lms.receiveAlert(
                 new Alert(
                         new Reading(System.currentTimeMillis(), 45),
-                        new SensorPair(Zones.HUDDERSFIELD.name(), "1")
+                        new SensorTuple(Zones.HUDDERSFIELD.name(), "1")
                 )
         );
 
@@ -173,7 +171,7 @@ public class LMSTest {
         lms.receiveAlert(
                 new Alert(
                         new Reading(System.currentTimeMillis(), 45),
-                        new SensorPair(Zones.HUDDERSFIELD.name(), "1")
+                        new SensorTuple(Zones.HUDDERSFIELD.name(), "1")
                 )
         );
 

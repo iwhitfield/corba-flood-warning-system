@@ -7,6 +7,16 @@ class Levels {
     private Integer alert_level;
     private Integer warning_level;
 
+    @SuppressWarnings("unused")
+    public Levels(){
+        // no-op
+    }
+
+    public Levels(int alert_level, int warning_level){
+        this.alert_level = alert_level;
+        this.warning_level = warning_level;
+    }
+
     public Integer getAlertLevel(){
         return alert_level;
     }
