@@ -46,6 +46,7 @@ module corba {
     interface RMC {
         void cancelAlert(in SensorTuple tuple);
         void receiveAlert(in Alert alert);
+        boolean testConnection(in string name);
 
         AlertLog getAlerts();
     };

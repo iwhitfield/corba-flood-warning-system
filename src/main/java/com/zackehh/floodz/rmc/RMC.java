@@ -12,7 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
 public class RMC extends RMCPOA {
 
@@ -91,6 +93,12 @@ public class RMC extends RMCPOA {
         }
 
         logger.info("Received alert from sensor #{} in {}", alert.pair.sensor, alert.pair.zone);
+    }
+
+    @Override
+    public boolean testConnection(String name) {
+        logger.info("Successfully received connection from LMS `{}`", name);
+        return true;
     }
 
     @Override

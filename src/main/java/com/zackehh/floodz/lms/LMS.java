@@ -35,8 +35,8 @@ public class LMS extends LMSPOA {
     public static void main(String[] args) throws Exception {
 
         levels = mapper.readValue(
-                IOUtils.toString(LMS.class.getResourceAsStream("/levels.json")),
-                new TypeReference<HashMap<String, Levels>>() {}
+            IOUtils.toString(LMS.class.getResourceAsStream("/levels.json")),
+            new TypeReference<HashMap<String, Levels>>() {}
         );
 
         try {
@@ -68,6 +68,16 @@ public class LMS extends LMSPOA {
 
             // Obtain the Sensor reference in the Naming service
             rmc = RMCHelper.narrow(nameService.resolve_str(Constants.REGIONAL_MONITORING_CENTRE));
+            if(rmc == null){
+                logger.error("Unable to find RMC!");
+                return;
+            }
+
+            // test out RMC connection
+            if(!rmc.testConnection(name)){
+                logger.error("RMC Connection test failed!");
+                return;
+            }
 
             orb.run();
         } catch (Exception e) {
