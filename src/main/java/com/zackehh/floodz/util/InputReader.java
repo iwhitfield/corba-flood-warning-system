@@ -7,17 +7,16 @@ import java.io.InputStreamReader;
 
 public class InputReader {
 
-    private final InputStream stream;
+    private final BufferedReader reader;
 
     public InputReader(InputStream stream){
-        this.stream = stream;
+        this.reader = new BufferedReader(new InputStreamReader(stream));
     }
 
     public String readString(String msg){
         try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(stream));
             System.out.print(msg);
-            return br.readLine();
+            return reader.readLine();
         } catch(IOException e) {
             return null;
         }

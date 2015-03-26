@@ -1,16 +1,15 @@
 package com.zackehh.floodz.lms;
 
+import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zackehh.floodz.common.Constants;
+import com.zackehh.floodz.common.NameServiceHandler;
 import com.zackehh.floodz.util.InputReader;
 import corba.*;
 import org.apache.commons.io.IOUtils;
 import org.omg.CORBA.ORB;
-import org.omg.CosNaming.NameComponent;
 import org.omg.CosNaming.NamingContextExt;
-import org.omg.CosNaming.NamingContextExtHelper;
-import org.omg.PortableServer.POA;
-import org.omg.PortableServer.POAHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,51 +34,40 @@ public class LMS extends LMSPOA {
 
     public static void main(String[] args) throws Exception {
 
-        console = new InputReader(System.in);
-
         levels = mapper.readValue(
                 IOUtils.toString(LMS.class.getResourceAsStream("/levels.json")),
                 new TypeReference<HashMap<String, Levels>>() {}
         );
 
         try {
-            name = console.readString("Please enter the station name: ");
+
+            LMSArgs lArgs = new LMSArgs();
+            JCommander j = new JCommander(lArgs);
+
+            j.setAcceptUnknownOptions(true);
+            j.parse(args);
+
+            console = new InputReader(System.in);
+
+            name = lArgs.name;
+            if(name == null){
+                name = console.readString("Please enter the station name: ");
+            }
 
             logger.info("Registered Local Monitoring Station: {}", name);
 
             // Initialise the ORB
             ORB orb = ORB.init(args, null);
 
-            // get reference to rootpoa & activate the POAManager
-            POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
-            if (rootpoa != null) {
-                rootpoa.the_POAManager().activate();
-            } else {
-                logger.error("Unable to retrieve POA!");
-                return;
-            }
-
-            // get object reference from the servant
-            org.omg.CORBA.Object ref = rootpoa.servant_to_reference(new LMS());
-            corba.LMS server_ref = LMSHelper.narrow(ref);
-
-            // Get a reference to the Naming service
-            org.omg.CORBA.Object nameServiceObj = orb.resolve_initial_references("NameService");
-            if (nameServiceObj == null) {
+            // Retrieve a name service
+            NamingContextExt nameService = NameServiceHandler.register(orb, new LMS(), name, LMSHelper.class);
+            if(nameService == null){
                 logger.error("Retrieved name service is null!");
                 return;
             }
 
-            // Use NamingContextExt which is part of the Interoperable
-            // Naming Service (INS) specification.
-            NamingContextExt nameService = NamingContextExtHelper.narrow(nameServiceObj);
-
-            // bind the Count object in the Naming service
-            NameComponent[] countName = nameService.to_name(name);
-            nameService.rebind(countName, server_ref);
-
             // Obtain the Sensor reference in the Naming service
-            rmc = RMCHelper.narrow(nameService.resolve_str("Regional Monitoring Station"));
+            rmc = RMCHelper.narrow(nameService.resolve_str(Constants.REGIONAL_MONITORING_CENTRE));
 
             orb.run();
         } catch (Exception e) {
@@ -100,22 +88,23 @@ public class LMS extends LMSPOA {
 
     @Override
     public void receiveAlert(Alert alert) {
-        logger.info("Received alert from sensor #{} in {}", alert.pair.sensor, alert.pair.zone);
+        logger.info("Received alert from sensor #{} in zone `{}`", alert.pair.sensor, alert.pair.zone);
 
         ConcurrentHashMap<String, Reading> zone = zoneMapping.get(alert.pair.zone);
 
         if(zone != null){
             zone.put(alert.pair.sensor, alert.reading);
         } else {
-            logger.warn("Measurement received from unregistered zone; {}", alert.pair.zone);
+            logger.warn("Measurement received from unregistered zone: {}", alert.pair.zone);
             return;
         }
 
         alertLog.add(alert);
 
-        logger.info("Registered alert {} from sensor #{}", alert.reading, alert.pair.sensor);
-
         if(alert.reading.measurement > 50){
+
+            logger.warn("Registered alert {} from Sensor #{}", alert.reading.measurement, alert.pair.sensor);
+
             int warnings = 0;
             for(Map.Entry<String, Reading> zoneMap : zone.entrySet()){
                 if(zoneMap.getValue().measurement > 50){
@@ -123,19 +112,23 @@ public class LMS extends LMSPOA {
                 }
             }
 
-            if(warnings > Math.ceil(zone.size() / 2)){
+            double half = Math.ceil(zone.size() / 2);
 
-                logger.info("Multiple warnings for {}, forwarding to RMC...", alert.pair.zone);
+            if(warnings > half && half > 1){
+
+                logger.info("Multiple warnings for zone `{}`, forwarding to RMC...", alert.pair.zone);
 
                 rmc.receiveAlert(alert);
 
             }
+        } else {
+            logger.info("Registered reading {} from Sensor #{}", alert.reading.measurement, alert.pair.sensor);
         }
     }
 
     @Override
     public void removeSensor(SensorPair pair) {
-        logger.info("Removed Sensor #{} from {}", pair.sensor, pair.zone);
+        logger.info("Removed Sensor #{} from zone `{}`", pair.sensor, pair.zone);
         if(zoneMapping.containsKey(pair.zone)){
             zoneMapping.get(pair.zone).remove(pair.sensor);
         }
@@ -150,7 +143,7 @@ public class LMS extends LMSPOA {
         if (zoneMapping.containsKey(zone)) {
             ConcurrentHashMap<String, Reading> zoneMap = zoneMapping.get(zone);
 
-            id = zoneMap.size() + "";
+            id = (zoneMap.size() + 1) + "";
 
             zoneMap.put(id, reading);
         } else {
@@ -159,7 +152,7 @@ public class LMS extends LMSPOA {
                 put(id, reading);
             }});
         }
-        logger.info("Added Sensor #{} to {}", id, zone);
+        logger.info("Added Sensor #{} to zone `{}`", id, zone);
 
         Levels sensorLevels;
         if(levels.containsKey(zone)){

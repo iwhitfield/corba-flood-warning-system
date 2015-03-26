@@ -1,6 +1,8 @@
 package com.zackehh.floodz.sensor;
 
 import com.beust.jcommander.JCommander;
+import com.zackehh.floodz.common.NameServiceHandler;
+import com.zackehh.floodz.common.NamingPair;
 import com.zackehh.floodz.util.InputReader;
 import corba.Alert;
 import corba.LMSHelper;
@@ -10,11 +12,7 @@ import corba.SensorMeta;
 import corba.SensorPOA;
 import corba.SensorPair;
 import org.omg.CORBA.ORB;
-import org.omg.CosNaming.NameComponent;
 import org.omg.CosNaming.NamingContextExt;
-import org.omg.CosNaming.NamingContextExtHelper;
-import org.omg.PortableServer.POA;
-import org.omg.PortableServer.POAHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +35,7 @@ public class Sensor extends SensorPOA {
 
         SensorArgs sensorArgs = new SensorArgs();
         JCommander j = new JCommander(sensorArgs);
+
         j.setAcceptUnknownOptions(true);
         j.parse(args);
 
@@ -57,29 +56,14 @@ public class Sensor extends SensorPOA {
         // Initialise the ORB
         ORB orb = ORB.init(args, null);
 
-        // get reference to rootpoa & activate the POAManager
-        POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
-        if (rootpoa != null) {
-            rootpoa.the_POAManager().activate();
-        } else {
-            logger.error("Unable to retrieve POA!");
-            return;
-        }
-
-        // get object reference from the servant
-        org.omg.CORBA.Object ref = rootpoa.servant_to_reference(new Sensor());
-        corba.Sensor server_ref = SensorHelper.narrow(ref);
-
-        // Get a reference to the Naming service
-        org.omg.CORBA.Object nameServiceObj = orb.resolve_initial_references("NameService");
-        if (nameServiceObj == null) {
+        // Retrieve a name service
+        NamingPair namingPair = NameServiceHandler.retrieveNameService(orb);
+        if(namingPair == null){
             logger.error("Retrieved name service is null!");
             return;
         }
 
-        // Use NamingContextExt which is part of the Interoperable
-        // Naming Service (INS) specification.
-        NamingContextExt nameService = NamingContextExtHelper.narrow(nameServiceObj);
+        NamingContextExt nameService = namingPair.getNamingService();
 
         lms = LMSHelper.narrow(nameService.resolve_str(lmsName));
         if(lms == null){
@@ -89,12 +73,16 @@ public class Sensor extends SensorPOA {
 
         SensorMeta meta = lms.registerSensor(zoneName);
 
-        // bind the Count object in the Naming service
-        NameComponent[] countName = nameService.to_name(meta.pair.sensor);
-        nameService.rebind(countName, server_ref);
+        NameServiceHandler.bind(
+                namingPair.getNamingService(),
+                NameServiceHandler.createRef(namingPair, new Sensor(), SensorHelper.class),
+                meta.pair.sensor
+        );
 
         pair = meta.pair;
         alert_level = meta.alert_level;
+
+        logger.info("Assigned id {} by LMS", meta.pair.sensor);
 
         processInput();
     }

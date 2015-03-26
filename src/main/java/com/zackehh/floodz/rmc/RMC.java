@@ -1,15 +1,13 @@
 package com.zackehh.floodz.rmc;
 
+import com.zackehh.floodz.common.Constants;
+import com.zackehh.floodz.common.NameServiceHandler;
 import corba.Alert;
 import corba.RMCHelper;
 import corba.RMCPOA;
 import corba.SensorPair;
 import org.omg.CORBA.ORB;
-import org.omg.CosNaming.NameComponent;
 import org.omg.CosNaming.NamingContextExt;
-import org.omg.CosNaming.NamingContextExtHelper;
-import org.omg.PortableServer.POA;
-import org.omg.PortableServer.POAHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,40 +20,19 @@ public class RMC extends RMCPOA {
 
     private final List<Alert> alerts = new ArrayList<>();
 
-    private static NamingContextExt nameService;
-
     public static void main(String[] args) {
         try {
-            // create and initialise the ORB
-            final ORB orb = ORB.init(args, null);
+            // Initialise the ORB
+            ORB orb = ORB.init(args, null);
 
-            // get reference to rootpoa & activate the POAManager
-            POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
-            if (rootpoa != null) {
-                rootpoa.the_POAManager().activate();
-            } else {
-                logger.error("Unable to retrieve POA!");
-                return;
-            }
-
-            // get object reference from the servant
-            org.omg.CORBA.Object ref = rootpoa.servant_to_reference(new RMC());
-            corba.RMC server_ref = RMCHelper.narrow(ref);
-
-            // Get a reference to the Naming service
-            org.omg.CORBA.Object nameServiceObj = orb.resolve_initial_references("NameService");
-            if (nameServiceObj == null) {
+            // Retrieve a name service
+            NamingContextExt nameService = NameServiceHandler.register(
+                    orb, new RMC(), Constants.REGIONAL_MONITORING_CENTRE, RMCHelper.class
+            );
+            if(nameService == null){
                 logger.error("Retrieved name service is null!");
                 return;
             }
-
-            // Use NamingContextExt which is part of the Interoperable
-            // Naming Service (INS) specification.
-            nameService = NamingContextExtHelper.narrow(nameServiceObj);
-
-            // bind the Count object in the Naming service
-            NameComponent[] countName = nameService.to_name("Regional Monitoring Station");
-            nameService.rebind(countName, server_ref);
 
             // Server has loaded up correctly
             logger.info("Remote Monitoring Centre is operational.");
@@ -109,7 +86,7 @@ public class RMC extends RMCPOA {
 
         }
 
-        if(stored){
+        if(!stored){
             alerts.add(alert);
         }
 
