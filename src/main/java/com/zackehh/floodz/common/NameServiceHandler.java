@@ -1,8 +1,8 @@
 package com.zackehh.floodz.common;
 
-import corba.LMSHelper;
-import corba.RMCHelper;
-import corba.SensorHelper;
+import com.zackehh.corba.lms.LMSHelper;
+import com.zackehh.corba.rmc.RMCHelper;
+import com.zackehh.corba.sensor.SensorHelper;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.omg.CosNaming.NamingContextExtHelper;

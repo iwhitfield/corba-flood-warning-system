@@ -1,15 +1,16 @@
 package com.zackehh.floodz.sensor;
 
+import com.zackehh.corba.common.Alert;
+import com.zackehh.corba.common.Reading;
+import com.zackehh.corba.common.SensorMeta;
+import com.zackehh.corba.common.SensorTuple;
+import com.zackehh.corba.lms.LMS;
+import com.zackehh.corba.lms.LMSHelper;
+import com.zackehh.corba.sensor.SensorHelper;
+import com.zackehh.corba.sensor.SensorPOA;
 import com.zackehh.floodz.common.NameServiceHandler;
 import com.zackehh.floodz.common.NamingPair;
 import com.zackehh.floodz.util.InputReader;
-import corba.Alert;
-import corba.LMSHelper;
-import corba.Reading;
-import corba.SensorHelper;
-import corba.SensorMeta;
-import corba.SensorPOA;
-import corba.SensorTuple;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public class SensorDriver extends SensorPOA {
 
     private Integer alert_level = 0;
 
-    private corba.LMS lms;
+    private LMS lms;
     private InputReader console;
     private ORB orb;
 

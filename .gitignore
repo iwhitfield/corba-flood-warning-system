@@ -1,4 +1,4 @@
 *.iml
 .idea
-src/main/java/corba
+**/corba
 target

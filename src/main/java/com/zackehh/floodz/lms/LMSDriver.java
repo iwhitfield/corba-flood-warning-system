@@ -2,16 +2,17 @@ package com.zackehh.floodz.lms;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zackehh.corba.common.Alert;
+import com.zackehh.corba.common.Reading;
+import com.zackehh.corba.common.SensorMeta;
+import com.zackehh.corba.common.SensorTuple;
+import com.zackehh.corba.lms.LMSHelper;
+import com.zackehh.corba.lms.LMSPOA;
+import com.zackehh.corba.rmc.RMC;
+import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.NameServiceHandler;
 import com.zackehh.floodz.util.InputReader;
-import corba.Alert;
-import corba.LMSHelper;
-import corba.LMSPOA;
-import corba.RMCHelper;
-import corba.Reading;
-import corba.SensorMeta;
-import corba.SensorTuple;
 import org.apache.commons.io.IOUtils;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
@@ -36,7 +37,7 @@ public class LMSDriver extends LMSPOA {
     private HashMap<String, Levels> levels;
 
     private InputReader console;
-    private corba.RMC rmc;
+    private RMC rmc;
     private String name;
     private final ORB orb;
 

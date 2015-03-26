@@ -1,11 +1,11 @@
 package com.zackehh.floodz.rmc;
 
+import com.zackehh.corba.common.Alert;
+import com.zackehh.corba.common.SensorTuple;
+import com.zackehh.corba.rmc.RMCHelper;
+import com.zackehh.corba.rmc.RMCPOA;
 import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.NameServiceHandler;
-import corba.Alert;
-import corba.RMCHelper;
-import corba.RMCPOA;
-import corba.SensorTuple;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;

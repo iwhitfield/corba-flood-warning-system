@@ -1,54 +1,77 @@
-module corba {
+module com {
 
-    struct Reading {
-        long long time;
-        long measurement;
-    };
+    module zackehh {
 
-    struct SensorTuple {
-        string zone;
-        string sensor;
-    };
+        module corba {
 
-    struct SensorMeta {
-        SensorTuple tuple;
-        long alert_level;
-    };
+            module common {
 
-    struct Alert {
-        Reading reading;
-        SensorTuple pair;
-    };
+                struct Reading {
+                    long long time;
+                    long measurement;
+                };
 
-    typedef sequence<Reading> Readings;
-    interface Sensor {
-        readonly attribute string id;
-        readonly attribute string zone;
+                struct SensorTuple {
+                    string zone;
+                    string sensor;
+                };
 
-        Reading currentReading();
-        Readings getReadingLog();
-    };
+                struct SensorMeta {
+                    SensorTuple tuple;
+                    long alert_level;
+                };
 
-    typedef sequence<string> Zones;
-    typedef sequence<Sensor> Sensors;
-    typedef sequence<Alert> AlertLog;
+                struct Alert {
+                    Reading reading;
+                    SensorTuple pair;
+                };
 
-    interface LMS {
-        readonly attribute string name;
-        readonly attribute AlertLog alertLog;
+                typedef sequence<Reading> Readings;
+                typedef sequence<string> Zones;
+                typedef sequence<Alert> AlertLog;
 
-        void receiveAlert(in Alert alert);
-        void removeSensor(in SensorTuple tuple);
+            };
 
-        SensorMeta registerSensor(in string zone);
-    };
+            module sensor {
 
-    interface RMC {
-        void cancelAlert(in SensorTuple tuple);
-        void receiveAlert(in Alert alert);
-        boolean testConnection(in string name);
+                interface Sensor {
+                    readonly attribute string id;
+                    readonly attribute string zone;
 
-        AlertLog getAlerts();
+                    common::Reading currentReading();
+                    common::Readings getReadingLog();
+                };
+
+            };
+
+            module lms {
+
+                interface LMS {
+                    readonly attribute string name;
+                    readonly attribute common::AlertLog alertLog;
+
+                    void receiveAlert(in common::Alert alert);
+                    void removeSensor(in common::SensorTuple tuple);
+
+                    common::SensorMeta registerSensor(in string zone);
+                };
+
+            };
+
+            module rmc {
+
+                interface RMC {
+                    void cancelAlert(in common::SensorTuple tuple);
+                    void receiveAlert(in common::Alert alert);
+                    boolean testConnection(in string name);
+
+                    common::AlertLog getAlerts();
+                };
+
+            };
+
+        };
+
     };
 
 };
