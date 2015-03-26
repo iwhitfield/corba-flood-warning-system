@@ -1,0 +1,53 @@
+module corba {
+
+    struct Reading {
+        long long time;
+        long measurement;
+    };
+
+    struct SensorPair {
+        string zone;
+        string sensor;
+    };
+
+    struct SensorMeta {
+        SensorTuple tuple;
+        long alert_level;
+    };
+
+    struct Alert {
+        Reading reading;
+        SensorTuple pair;
+    };
+
+    typedef sequence<Reading> Readings;
+    interface Sensor {
+        readonly attribute string id;
+        readonly attribute string zone;
+
+        long currentReading();
+        Readings getReadingLog();
+    };
+
+    typedef sequence<string> Zones;
+    typedef sequence<Sensor> Sensors;
+    typedef sequence<Alert> AlertLog;
+
+    interface LMS {
+        readonly attribute string name;
+        readonly attribute AlertLog alertLog;
+
+        void receiveAlert(in Alert alert);
+        void removeSensor(in SensorTuple tuple);
+
+        SensorMeta registerSensor(in string zone);
+    };
+
+    interface RMC {
+        void cancelAlert(in SensorTuple tuple);
+        void receiveAlert(in Alert alert);
+
+        AlertLog getAlerts();
+    };
+
+};

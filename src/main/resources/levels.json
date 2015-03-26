@@ -1,0 +1,6 @@
+{
+  "default":{
+    "warning_level": 40,
+    "alert_level": 60
+  }
+}
