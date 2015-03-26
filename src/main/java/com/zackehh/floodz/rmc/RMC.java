@@ -5,7 +5,7 @@ import com.zackehh.floodz.common.NameServiceHandler;
 import corba.Alert;
 import corba.RMCHelper;
 import corba.RMCPOA;
-import corba.SensorPair;
+import corba.SensorTuple;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
@@ -46,7 +46,7 @@ public class RMC extends RMCPOA {
     }
 
     @Override
-    public synchronized void cancelAlert(SensorPair pair) {
+    public synchronized void cancelAlert(SensorTuple tuple) {
 
         int size = alerts.size();
 
@@ -54,7 +54,7 @@ public class RMC extends RMCPOA {
 
             Alert alert = alerts.get(i);
 
-            if(alert.pair.equals(pair)){
+            if(alert.pair.equals(tuple)){
                 alerts.remove(i);
                 break;
             }
@@ -62,9 +62,9 @@ public class RMC extends RMCPOA {
         }
 
         if(alerts.size() == size - 1){
-            logger.info("Removed alert from sensor #{} in {}", pair.sensor, pair.zone);
+            logger.info("Removed alert from sensor #{} in {}", tuple.sensor, tuple.zone);
         } else {
-            logger.warn("Request to remove unknown alert from sensor #{} in {}", pair.sensor, pair.zone);
+            logger.warn("Request to remove unknown alert from sensor #{} in {}", tuple.sensor, tuple.zone);
         }
 
     }

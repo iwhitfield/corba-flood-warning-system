@@ -127,10 +127,10 @@ public class LMS extends LMSPOA {
     }
 
     @Override
-    public void removeSensor(SensorPair pair) {
-        logger.info("Removed Sensor #{} from zone `{}`", pair.sensor, pair.zone);
-        if(zoneMapping.containsKey(pair.zone)){
-            zoneMapping.get(pair.zone).remove(pair.sensor);
+    public void removeSensor(SensorTuple tuple) {
+        logger.info("Removed Sensor #{} from zone `{}`", tuple.sensor, tuple.zone);
+        if(zoneMapping.containsKey(tuple.zone)){
+            zoneMapping.get(tuple.zone).remove(tuple.sensor);
         }
     }
 
@@ -160,7 +160,7 @@ public class LMS extends LMSPOA {
         } else {
             sensorLevels = levels.get("default");
         }
-        return new SensorMeta(new SensorPair(zone, id), sensorLevels.getAlertLevel());
+        return new SensorMeta(new SensorTuple(zone, id), sensorLevels.getAlertLevel());
     }
 
     ConcurrentHashMap<String, Reading> getZone(String zone){

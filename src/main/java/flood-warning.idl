@@ -5,7 +5,7 @@ module corba {
         long measurement;
     };
 
-    struct SensorPair {
+    struct SensorTuple {
         string zone;
         string sensor;
     };
@@ -25,7 +25,7 @@ module corba {
         readonly attribute string id;
         readonly attribute string zone;
 
-        long currentReading();
+        Reading currentReading();
         Readings getReadingLog();
     };
 

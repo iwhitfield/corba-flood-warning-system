@@ -10,9 +10,10 @@ import corba.Reading;
 import corba.SensorHelper;
 import corba.SensorMeta;
 import corba.SensorPOA;
-import corba.SensorPair;
+import corba.SensorTuple;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +26,8 @@ public class Sensor extends SensorPOA {
     private static final List<Reading> readingLog = new ArrayList<>();
 
     private static Integer alert_level = 0;
-    private static Integer current = 0;
-    private static SensorPair pair;
+    private static Reading current = null;
+    private static SensorTuple tuple;
 
     private static corba.LMS lms;
     private static InputReader console;
@@ -38,20 +39,6 @@ public class Sensor extends SensorPOA {
 
         j.setAcceptUnknownOptions(true);
         j.parse(args);
-
-        console = new InputReader(System.in);
-
-        String lmsName = sensorArgs.lms;
-        if(lmsName == null){
-            lmsName = console.readString("Please enter the local station name: ");
-        }
-
-        String zoneName = sensorArgs.zone;
-        if(zoneName == null){
-            zoneName = console.readString("Please enter the sensor zone: ");
-        }
-
-        logger.info("Sensor of zone {} connecting to LMS: {}", zoneName, lmsName);
 
         // Initialise the ORB
         ORB orb = ORB.init(args, null);
@@ -65,40 +52,55 @@ public class Sensor extends SensorPOA {
 
         NamingContextExt nameService = namingPair.getNamingService();
 
-        lms = LMSHelper.narrow(nameService.resolve_str(lmsName));
-        if(lms == null){
-            logger.error("Unable to find an LMS!");
+        console = new InputReader(System.in);
+
+        String lmsName = sensorArgs.lms;
+        if(lmsName == null){
+            lmsName = console.readString("Please enter the local station name: ");
+        }
+
+        try {
+            lms = LMSHelper.narrow(nameService.resolve_str(lmsName));
+        } catch(NotFound e){
+            logger.error("Unable to find an LMS with name `{}`", lmsName);
             return;
         }
+
+        String zoneName = sensorArgs.zone;
+        if(zoneName == null){
+            zoneName = console.readString("Please enter the sensor zone: ");
+        }
+
+        logger.info("Sensor of zone {} connecting to LMS: {}", zoneName, lmsName);
 
         SensorMeta meta = lms.registerSensor(zoneName);
 
         NameServiceHandler.bind(
                 namingPair.getNamingService(),
                 NameServiceHandler.createRef(namingPair, new Sensor(), SensorHelper.class),
-                meta.pair.sensor
+                meta.tuple.sensor
         );
 
-        pair = meta.pair;
+        tuple = meta.tuple;
         alert_level = meta.alert_level;
 
-        logger.info("Assigned id {} by LMS", meta.pair.sensor);
+        logger.info("Assigned id {} by LMS", meta.tuple.sensor);
 
         processInput();
     }
 
     @Override
     public String id() {
-        return pair.sensor;
+        return tuple.sensor;
     }
 
     @Override
     public String zone() {
-        return pair.zone;
+        return tuple.zone;
     }
 
     @Override
-    public int currentReading() {
+    public Reading currentReading() {
         return current;
     }
 
@@ -119,8 +121,9 @@ public class Sensor extends SensorPOA {
 
                 Reading reading = new Reading(System.currentTimeMillis(), input);
 
-                lms.receiveAlert(new Alert(reading, pair));
+                lms.receiveAlert(new Alert(reading, tuple));
 
+                current = reading;
                 readingLog.add(reading);
 
                 if(input > alert_level){
@@ -128,6 +131,8 @@ public class Sensor extends SensorPOA {
                 } else {
                     logger.info("Registered new reading: {}", input);
                 }
+
+                System.out.println("");
 
             }
         }
