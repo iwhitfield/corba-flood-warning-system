@@ -1,3 +1,6 @@
+;+
+; I guess nested modules are the only way to define packages?
+;-
 module com {
 
     module zackehh {

@@ -1,5 +1,9 @@
 package com.zackehh.floodz.common;
 
+/**
+ * Set values to be shared across each module (Sensor/LMS/RMC). Used as a
+ * central way to avoid errors due to things such as typos.
+ */
 public final class Constants {
 
     private Constants(){ }

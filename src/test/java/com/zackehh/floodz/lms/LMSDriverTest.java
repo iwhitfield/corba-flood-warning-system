@@ -1,8 +1,8 @@
 package com.zackehh.floodz.lms;
 
-import corba.Alert;
-import corba.Reading;
-import corba.SensorTuple;
+import com.zackehh.corba.common.Alert;
+import com.zackehh.corba.common.Reading;
+import com.zackehh.corba.common.SensorTuple;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

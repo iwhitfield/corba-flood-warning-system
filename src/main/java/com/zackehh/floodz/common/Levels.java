@@ -1,8 +1,8 @@
-package com.zackehh.floodz.lms;
+package com.zackehh.floodz.common;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 
-class Levels {
+public class Levels {
 
     private Integer alert_level;
     private Integer warning_level;
