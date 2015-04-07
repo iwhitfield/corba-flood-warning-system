@@ -16,12 +16,12 @@ import java.lang.reflect.InvocationTargetException;
  * little messy due to the need to provide a version specific to the calling class,
  * but it removes the need to change code in all component classes.
  */
-public class NameServiceHandler {
+public class NamingServiceHandler {
 
     /**
      * Start up a {@link org.slf4j.Logger} to output any information.
      */
-    private static final Logger logger = LoggerFactory.getLogger(NameServiceHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(NamingServiceHandler.class);
 
     /**
      * Binds a CORBA Object reference to the NameService with a given name. Shorthand
@@ -57,7 +57,7 @@ public class NameServiceHandler {
             );
         } catch(IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             logger.debug("{}", e);
-            throw new IllegalArgumentException("Unrecognised helper passed to #createRef: " + clazz.getSimpleName());
+            throw new IllegalArgumentException("Unrecognised helper passed to #createRef: " + clazz.getCanonicalName());
         }
 
     }
@@ -84,7 +84,7 @@ public class NameServiceHandler {
         }
 
         // grab the NameService
-        NamingContextExt nameService = namingPair.getNamingService();
+        NamingContextExt namingService = namingPair.getNamingService();
 
         // create an object reference from the servant
         org.omg.CORBA.Object server_ref = createRef(namingPair, servant, clazz);
@@ -93,7 +93,7 @@ public class NameServiceHandler {
         bind(namingPair.getNamingService(), server_ref, name);
 
         // Return the NameService
-        return nameService;
+        return namingService;
 
     }
 
@@ -116,13 +116,13 @@ public class NameServiceHandler {
         }
 
         // get a reference to the NameService and check null
-        org.omg.CORBA.Object nameServiceObj = orb.resolve_initial_references(Constants.NAME_SERVICE);
-        if (nameServiceObj == null) {
+        org.omg.CORBA.Object namingServiceObj = orb.resolve_initial_references(Constants.NAME_SERVICE);
+        if (namingServiceObj == null) {
             return null;
         }
 
         // Return the NameService and RootPOA inside of a NamingPair
-        return new NamingPair(NamingContextExtHelper.narrow(nameServiceObj), rootpoa);
+        return new NamingPair(NamingContextExtHelper.narrow(namingServiceObj), rootpoa);
     }
 
 }

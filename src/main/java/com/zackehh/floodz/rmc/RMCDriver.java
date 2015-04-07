@@ -5,7 +5,7 @@ import com.zackehh.corba.common.SensorTuple;
 import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.corba.rmc.RMCPOA;
 import com.zackehh.floodz.common.Constants;
-import com.zackehh.floodz.common.NameServiceHandler;
+import com.zackehh.floodz.common.NamingServiceHandler;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ public class RMCDriver extends RMCPOA {
         NamingContextExt nameService;
         try {
             // Retrieve a name service
-            nameService = NameServiceHandler.register(
+            nameService = NamingServiceHandler.register(
                     orb, this, Constants.REGIONAL_MONITORING_CENTRE, RMCHelper.class
             );
             if(nameService == null){

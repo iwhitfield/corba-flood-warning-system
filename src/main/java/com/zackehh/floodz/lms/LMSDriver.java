@@ -12,7 +12,7 @@ import com.zackehh.corba.rmc.RMC;
 import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.Levels;
-import com.zackehh.floodz.common.NameServiceHandler;
+import com.zackehh.floodz.common.NamingServiceHandler;
 import com.zackehh.floodz.util.InputReader;
 import org.apache.commons.io.IOUtils;
 import org.omg.CORBA.ORB;
@@ -31,6 +31,7 @@ public class LMSDriver extends LMSPOA {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private final ConcurrentHashMap<String, Reading> alertStates = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Reading>> zoneMapping = new ConcurrentHashMap<>();
     private final List<Alert> alertLog = new ArrayList<>();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -57,6 +58,7 @@ public class LMSDriver extends LMSPOA {
             name = console.readString("Please enter the station name: ");
         }
 
+        System.out.println("");
         logger.info("Registered Local Monitoring Station: {}", name);
 
         // Initialise the ORB
@@ -65,7 +67,7 @@ public class LMSDriver extends LMSPOA {
         NamingContextExt nameService;
         try {
             // Retrieve a name service
-            nameService = NameServiceHandler.register(orb, this, name, LMSHelper.class);
+            nameService = NamingServiceHandler.register(orb, this, name, LMSHelper.class);
             if(nameService == null){
                 throw new Exception();
             }
@@ -99,6 +101,17 @@ public class LMSDriver extends LMSPOA {
     }
 
     @Override
+    public Reading[] getCurrentState() {
+        List<Reading> currentState = new ArrayList<>();
+
+        for(Map.Entry<String, Reading> zone : alertStates.entrySet()){
+            currentState.add(zone.getValue());
+        }
+
+        return currentState.toArray(new Reading[currentState.size()]);
+    }
+
+    @Override
     public Alert[] alertLog() {
         return alertLog.toArray(new Alert[alertLog.size()]);
     }
@@ -118,33 +131,37 @@ public class LMSDriver extends LMSPOA {
 
         alertLog.add(alert);
 
-        int alert_level = levels.get(alert.pair.zone).getAlertLevel();
+        int alert_level = getLevelsForZone(alert.pair.zone).getAlertLevel();
 
         if(alert.reading.measurement > alert_level){
-
             logger.warn("Registered alert {} from Sensor #{}", alert.reading.measurement, alert.pair.sensor);
-
-            int warnings = 0;
-            for(Map.Entry<String, Reading> zoneMap : zone.entrySet()){
-                if(zoneMap.getValue().measurement > alert_level){
-                    warnings++;
-                }
-            }
-
-            double half = Math.floor(zone.size() / 2);
-
-            if(warnings >= half && zone.size() > 1){
-
-                logger.info("Multiple warnings for zone `{}`, forwarding to RMC...", alert.pair.zone);
-
-                if(rmc != null) {
-                    rmc.receiveAlert(alert);
-                }
-
-            }
         } else {
             logger.info("Registered reading {} from Sensor #{}", alert.reading.measurement, alert.pair.sensor);
         }
+
+        double avg = 0;
+
+        for(Map.Entry<String, Reading> zoneMap : zone.entrySet()){
+            avg += zoneMap.getValue().measurement;
+        }
+
+        int size = zone.size();
+
+        avg = Math.round((avg / size) * 100.0) / 100.0;
+
+        if(avg >= alert_level && size > 1){
+
+            logger.info("Multiple warnings for zone `{}`, forwarding to RMC...", alert.pair.zone);
+
+            if(rmc != null) {
+                rmc.receiveAlert(alert);
+            }
+
+            alertStates.put(alert.pair.zone, new Reading(alert.reading.time, avg));
+        } else {
+            alertStates.remove(alert.pair.zone);
+        }
+
     }
 
     @Override
@@ -175,10 +192,7 @@ public class LMSDriver extends LMSPOA {
         }
         logger.info("Added Sensor #{} to zone `{}`", id, zone);
 
-        if(!levels.containsKey(zone)){
-            levels.put(zone, levels.get("default"));
-        }
-        return new SensorMeta(new SensorTuple(zone, id), levels.get(zone).getAlertLevel());
+        return new SensorMeta(new SensorTuple(zone, id), getLevelsForZone(zone).getAlertLevel());
     }
 
     public ORB getEmbeddedOrb(){
@@ -193,7 +207,14 @@ public class LMSDriver extends LMSPOA {
         return zoneMapping;
     }
 
-    private HashMap<String, Levels> getOnMyLevels(){
+    private Levels getLevelsForZone(String zone){
+        if(!levels.containsKey(zone)){
+            return levels.get("default");
+        }
+        return levels.get(zone);
+    }
+
+    private HashMap<String, Levels> getOnMyLevels() {
         try {
             return mapper.readValue(
                     IOUtils.toString(LMS.class.getResourceAsStream("/levels.json")),

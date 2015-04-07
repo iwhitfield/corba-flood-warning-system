@@ -1,6 +1,3 @@
-;+
-; I guess nested modules are the only way to define packages?
-;-
 module com {
 
     module zackehh {
@@ -11,7 +8,7 @@ module com {
 
                 struct Reading {
                     long long time;
-                    long measurement;
+                    double measurement;
                 };
 
                 struct SensorTuple {
@@ -41,6 +38,11 @@ module com {
                     readonly attribute string id;
                     readonly attribute string zone;
 
+                    boolean powerOff();
+                    boolean powerOn();
+                    void reset();
+                    void sendAlert(in long measurement);
+
                     common::Reading currentReading();
                     common::Readings getReadingLog();
                 };
@@ -50,13 +52,13 @@ module com {
             module lms {
 
                 interface LMS {
-                    readonly attribute string name;
                     readonly attribute common::AlertLog alertLog;
+                    readonly attribute string name;
 
+                    common::Readings getCurrentState();
+                    common::SensorMeta registerSensor(in string zone);
                     void receiveAlert(in common::Alert alert);
                     void removeSensor(in common::SensorTuple tuple);
-
-                    common::SensorMeta registerSensor(in string zone);
                 };
 
             };
