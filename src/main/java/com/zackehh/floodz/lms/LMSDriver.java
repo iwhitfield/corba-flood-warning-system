@@ -86,10 +86,9 @@ public class LMSDriver extends LMSPOA {
             throw new IllegalStateException("Unable to find RMC!");
         }
 
-
         // test out RMC connection
-        if (!rmc.testConnection(name)) {
-            throw new IllegalStateException("RMC Connection test failed!");
+        if (!rmc.registerLMSConnection(name)) {
+            throw new IllegalStateException("RMC Connection failed!");
         } else {
             logger.info("Made successful connection to RMC");
         }
@@ -159,7 +158,11 @@ public class LMSDriver extends LMSPOA {
 
             alertStates.put(alert.pair.zone, new Reading(alert.reading.time, avg));
         } else {
-            alertStates.remove(alert.pair.zone);
+
+            if(alertStates.containsKey(alert.pair.zone)){
+                rmc.cancelAlert(alert.pair);
+                alertStates.remove(alert.pair.zone);
+            }
         }
 
     }

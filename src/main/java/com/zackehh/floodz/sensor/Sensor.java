@@ -11,7 +11,6 @@ public class Sensor {
     private static SensorDriver sensorDriver;
 
     public static void main(String args[]) throws Exception {
-
         SensorArgs sensorArgs = new SensorArgs();
         JCommander j = new JCommander(sensorArgs);
 
@@ -29,8 +28,11 @@ public class Sensor {
         System.out.println("");
         System.out.println("Enter a reading, or choose from one of the commands below:");
         System.out.println("- exit, exits the Sensor");
-        System.out.println("- status, views current Sensor alert status");
         System.out.println("- history, views Sensor reading history");
+        System.out.println("- poweroff, turns off the Sensor");
+        System.out.println("- poweron, turns on the Sensor");
+        System.out.println("- reset, resets the Sensor logs");
+        System.out.println("- status, views current Sensor alert status");
         System.out.println("");
 
         while(true){

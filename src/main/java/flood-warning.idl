@@ -68,7 +68,7 @@ module com {
                 interface RMC {
                     void cancelAlert(in common::SensorTuple tuple);
                     void receiveAlert(in common::Alert alert);
-                    boolean testConnection(in string name);
+                    boolean registerLMSConnection(in string name);
 
                     common::AlertLog getAlerts();
                 };

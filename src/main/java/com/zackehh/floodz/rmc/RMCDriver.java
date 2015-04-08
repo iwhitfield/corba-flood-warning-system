@@ -56,7 +56,7 @@ public class RMCDriver extends RMCPOA {
 
             Alert alert = alerts.get(i);
 
-            if(alert.pair.equals(tuple)){
+            if(alert.pair.zone.equals(tuple.zone)){
                 alerts.remove(i);
                 break;
             }
@@ -80,7 +80,7 @@ public class RMCDriver extends RMCPOA {
 
             Alert storedAlert = alerts.get(i);
 
-            if(storedAlert.pair.equals(alert.pair)){
+            if(storedAlert.pair.zone.equals(alert.pair.zone)){
                 alerts.set(i, alert);
                 stored = true;
                 break;
@@ -96,7 +96,8 @@ public class RMCDriver extends RMCPOA {
     }
 
     @Override
-    public boolean testConnection(String name) {
+    public boolean registerLMSConnection(String name) {
+        // TODO: store somehow?
         logger.info("Successfully received connection from LMS `{}`", name);
         return true;
     }
