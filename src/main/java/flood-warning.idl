@@ -8,7 +8,7 @@ module com {
 
                 struct Reading {
                     long long time;
-                    double measurement;
+                    long measurement;
                 };
 
                 struct SensorMeta {
@@ -71,7 +71,7 @@ module com {
                 interface RMC {
                     boolean ping();
 
-                    void cancelAlert(in common::SensorMeta tuple);
+                    void cancelAlert(in common::MetaData metadata);
                     void receiveAlert(in common::Alert alert);
                     boolean registerLMSConnection(in string name);
 

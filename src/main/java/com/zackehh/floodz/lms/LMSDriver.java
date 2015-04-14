@@ -1,6 +1,7 @@
 package com.zackehh.floodz.lms;
 
 import com.zackehh.corba.common.Alert;
+import com.zackehh.corba.common.MetaData;
 import com.zackehh.corba.common.Reading;
 import com.zackehh.corba.common.SensorMeta;
 import com.zackehh.corba.lms.LMSHelper;
@@ -108,7 +109,7 @@ public class LMSDriver extends LMSPOA {
     }
 
     @Override
-    public void receiveAlert(Alert alert) {
+    public void receiveAlert(final Alert alert) {
         logger.info("Received alert from sensor #{} in zone `{}`", alert.meta.sensorMeta.sensor, alert.meta.sensorMeta.zone);
 
         ConcurrentHashMap<String, Reading> zone = zoneMapping.get(alert.meta.sensorMeta.zone);
@@ -116,8 +117,11 @@ public class LMSDriver extends LMSPOA {
         if(zone != null){
             zone.put(alert.meta.sensorMeta.sensor, alert.reading);
         } else {
-            logger.warn("Measurement received from unregistered zone: {}", alert.meta.sensorMeta.zone);
-            return;
+            logger.warn("Adding measurement from previously unregistered zone: {}", alert.meta.sensorMeta.zone);
+            zone = new ConcurrentHashMap<String, Reading>(){{
+                put(alert.meta.sensorMeta.sensor, alert.reading);
+            }};
+            zoneMapping.put(alert.meta.sensorMeta.zone, zone);
         }
 
         alertLog.add(alert);
@@ -130,7 +134,7 @@ public class LMSDriver extends LMSPOA {
             logger.info("Registered reading {} from Sensor #{}", alert.reading.measurement, alert.meta.sensorMeta.sensor);
         }
 
-        double avg = 0;
+        int avg = 0;
 
         for(Map.Entry<String, Reading> zoneMap : zone.entrySet()){
             avg += zoneMap.getValue().measurement;
@@ -138,7 +142,7 @@ public class LMSDriver extends LMSPOA {
 
         int size = zone.size();
 
-        avg = Math.round((avg / size) * 100.0) / 100.0;
+        avg = Math.round((avg / size) * 100) / 100;
 
         try {
             rmc.ping();
@@ -146,9 +150,11 @@ public class LMSDriver extends LMSPOA {
             rmc = LMSUtil.findRMCBinding(nameService);
         }
 
-        if(avg >= alert_level && size > 1){
+        if((avg >= alert_level && size > 2) || (avg > alert_level && size > 1)){
 
             logger.info("Multiple warnings for zone `{}`, forwarding to RMC...", alert.meta.sensorMeta.zone);
+
+            alert.reading.measurement = avg;
 
             if(rmc != null) {
                 rmc.receiveAlert(alert);
@@ -159,9 +165,11 @@ public class LMSDriver extends LMSPOA {
             alertStates.put(alert.meta.sensorMeta.zone, new Reading(alert.reading.time, avg));
         } else {
 
+            logger.info("Removed alert state for zone `{}`, forwarding to RMC...", alert.meta.sensorMeta.zone);
+
             if(alertStates.containsKey(alert.meta.sensorMeta.zone)){
                 if(rmc != null) {
-                    rmc.cancelAlert(alert.meta.sensorMeta);
+                    rmc.cancelAlert(new MetaData(name, alert.meta.sensorMeta));
                 } else {
                     logger.warn("RMC is unreachable!");
                 }

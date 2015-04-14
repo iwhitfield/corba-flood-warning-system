@@ -1,31 +1,30 @@
 package com.zackehh.floodz.rmc;
 
 import com.zackehh.corba.common.Alert;
-import com.zackehh.floodz.common.ui.BaseTable;
+import com.zackehh.corba.common.MetaData;
+import com.zackehh.floodz.common.SQLiteClient;
+import com.zackehh.floodz.common.ui.table.BaseTable;
+import com.zackehh.floodz.common.ui.table.RMCTableModel;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Vector;
 
-public class RMC extends JFrame {
-
-    private BaseTable lotTable;
-    private JScrollPane itemListPanel;
-    private OverviewCard overviewCard;
+public class RMCClient extends JFrame {
 
     private static RMCDriver rmcDriver;
-    private static SimpleDateFormat hourFormat = new SimpleDateFormat("HH:mm:ss");
-    private static SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+    private static RMCTableModel rmcTableModel;
+
+    private final SQLiteClient sqLiteClient;
 
     private Vector<Vector<String>> messageList = new Vector<>();
 
-    public static void main(String[] args) {
-        RMC rmc = new RMC();
+    public static void main(String[] args) throws SQLException {
+        RMCClient rmc = new RMCClient();
 
         rmcDriver = new RMCDriver(args, rmc);
 
@@ -37,7 +36,10 @@ public class RMC extends JFrame {
         }).start();
     }
 
-    public RMC(){
+    public RMCClient() throws SQLException {
+        // Set up variables
+        sqLiteClient = new SQLiteClient();
+
         // Set the application title as well as the username
         setTitle("YoloSwagz");
 
@@ -55,10 +57,8 @@ public class RMC extends JFrame {
         // Create a new card layout
         JPanel cards = new JPanel(new CardLayout());
 
-        overviewCard = new OverviewCard();
-
         // Add the card to the CardLayout
-        cards.add(overviewCard, "Overview");
+        cards.add(new OverviewCard(), "Overview");
 
         // Add the CardLayout to the Container
         cp.add(cards);
@@ -78,19 +78,27 @@ public class RMC extends JFrame {
         // Disable resize
         setResizable(false);
 
+        // Load any existing alerts
+        loadExistingAlerts();
+
         // Display!
         setVisible(true);
     }
 
     public void addAlert(Alert alert){
-        Date d = new Date(alert.reading.time);
+        rmcTableModel.addAlert(alert);
+    }
 
-        overviewCard.getTableModel().addRow(new String[]{
-                alert.meta.lms,
-                hourFormat.format(d) + " on " + dateFormat.format(d),
-                alert.meta.sensorMeta.zone + "/" + alert.meta.sensorMeta.sensor,
-                ((int) alert.reading.measurement) + "%"
-        });
+    public void cancelAlert(MetaData metadata){
+        rmcTableModel.removeAlert(metadata);
+    }
+
+    private void loadExistingAlerts(){
+        List<Alert> oldAlerts = sqLiteClient.retrieveAllAlerts();
+
+        for(Alert oldAlert : oldAlerts){
+            rmcTableModel.addAlert(oldAlert, false);
+        }
     }
 
     private class OverviewCard extends JPanel {
@@ -99,16 +107,19 @@ public class RMC extends JFrame {
             // Border layout to use full window
             setLayout(new BorderLayout());
 
-            // Create an initial base table with the given column names
-            lotTable = new BaseTable(messageList, new Vector<String>(){{
+            // Set the table model
+            rmcTableModel = new RMCTableModel(sqLiteClient, messageList, new Vector<String>(){{
                 add("LMS ID");
                 add("Time");
                 add("Reporting Zone/Sensor");
                 add("Received Level");
             }});
 
+            // Create an initial base table with the given column names
+            BaseTable lotTable = new BaseTable(rmcTableModel);
+
             // Add the table to a scrolling pane
-            itemListPanel = new JScrollPane(
+            JScrollPane itemListPanel = new JScrollPane(
                     lotTable,
                     JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                     JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
@@ -116,16 +127,6 @@ public class RMC extends JFrame {
 
             // Add the scrolling pane to the main panel
             add(itemListPanel, BorderLayout.SOUTH);
-        }
-
-        /**
-         * Returns the table model of lotTable for access outside
-         * this class. This is used to populate the table initially.
-         *
-         * @return DefaultTableModel    the table model
-         */
-        public DefaultTableModel getTableModel(){
-            return ((DefaultTableModel) lotTable.getModel());
         }
 
     }

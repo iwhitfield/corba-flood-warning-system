@@ -1,4 +1,6 @@
 *.iml
+.DS_Store
 .idea
+local.db
 **/corba
 target

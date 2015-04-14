@@ -1,6 +1,7 @@
 package com.zackehh.floodz.rmc;
 
 import com.zackehh.corba.common.Alert;
+import com.zackehh.corba.common.MetaData;
 import com.zackehh.corba.common.Reading;
 import com.zackehh.corba.common.SensorMeta;
 import com.zackehh.corba.lms.LMS;
@@ -25,19 +26,19 @@ public class RMCDriver extends RMCPOA {
 
     private final List<Alert> alerts = new ArrayList<>();
     private final ORB orb;
-    private final RMC rmc;
+    private final RMCClient rmcClient;
 
     @SuppressWarnings("unused")
     RMCDriver(){
         // testing ctor
         this.orb = null;
-        this.rmc = null;
+        this.rmcClient = null;
     }
 
-    public RMCDriver(String[] args, RMC rmc){
+    public RMCDriver(String[] args, RMCClient rmcClient){
         // Initialise the ORB
         this.orb = ORB.init(args, null);
-        this.rmc = rmc;
+        this.rmcClient = rmcClient;
 
         try {
             // Retrieve a name service
@@ -61,22 +62,20 @@ public class RMCDriver extends RMCPOA {
     }
 
     @Override
-    public synchronized void cancelAlert(SensorMeta sensorMeta) {
+    public synchronized void cancelAlert(MetaData metaData) {
 
         int size = alerts.size();
 
         for(int i = 0; i < size; i++){
-            if(alerts.get(i).meta.sensorMeta.zone.equals(sensorMeta.zone)){
+            if(alerts.get(i).meta.sensorMeta.zone.equals(metaData.sensorMeta.zone)){
                 alerts.remove(i);
                 break;
             }
         }
 
-        if(alerts.size() == size - 1){
-            logger.info("Removed alert from sensor #{} in {}", sensorMeta.sensor, sensorMeta.zone);
-        } else {
-            logger.warn("Request to remove unknown alert from sensor #{} in {}", sensorMeta.sensor, sensorMeta.zone);
-        }
+        rmcClient.cancelAlert(metaData);
+
+        logger.info("Removed alert from sensor #{} in {}", metaData.sensorMeta.sensor, metaData.sensorMeta.zone);
 
     }
 
@@ -99,8 +98,9 @@ public class RMCDriver extends RMCPOA {
 
         if(!stored){
             alerts.add(alert);
-            rmc.addAlert(alert);
         }
+
+        rmcClient.addAlert(alert);
 
         logger.info("Received alert from sensor #{} in {}", alert.meta.sensorMeta.sensor, alert.meta.sensorMeta.zone);
     }
