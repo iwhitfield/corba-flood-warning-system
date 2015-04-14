@@ -1,11 +1,10 @@
 package com.zackehh.floodz.sensor;
 
 import com.zackehh.corba.common.Alert;
+import com.zackehh.corba.common.MetaData;
 import com.zackehh.corba.common.Reading;
 import com.zackehh.corba.common.SensorMeta;
-import com.zackehh.corba.common.SensorTuple;
 import com.zackehh.corba.lms.LMS;
-import com.zackehh.corba.lms.LMSHelper;
 import com.zackehh.corba.sensor.SensorHelper;
 import com.zackehh.corba.sensor.SensorPOA;
 import com.zackehh.floodz.common.NamingServiceHandler;
@@ -22,20 +21,19 @@ public class SensorDriver extends SensorPOA {
     private final List<Reading> readingLog = new ArrayList<>();
 
     private Reading current = null;
-    private SensorTuple tuple;
+    private MetaData metadata;
 
     private Boolean power_on;
-    private Integer alert_level = 0;
 
     private LMS lms;
-    private InputReader console;
+    private NamingContextExt namingContextExt;
     private ORB orb;
 
-    SensorDriver(SensorMeta meta){
+    @SuppressWarnings("unused")
+    SensorDriver(MetaData meta){
         // testing ctor
-        this.alert_level = meta.alert_level;
+        this.metadata = meta;
         this.orb = null;
-        this.tuple = meta.tuple;
     }
 
     public SensorDriver(String[] args, SensorArgs sArgs){
@@ -54,13 +52,12 @@ public class SensorDriver extends SensorPOA {
             if(namingPair == null){
                 throw new Exception();
             }
+            namingContextExt = namingPair.getNamingService();
         } catch(Exception e) {
             throw new IllegalStateException("Retrieved name service is null!");
         }
 
-        NamingContextExt nameService = namingPair.getNamingService();
-
-        console = new InputReader(System.in);
+        InputReader console = new InputReader(System.in);
 
         String zoneName = sArgs.zone;
         if(zoneName == null){
@@ -72,13 +69,8 @@ public class SensorDriver extends SensorPOA {
             lmsName = console.readString("Please enter the local station name: ");
         }
 
-        try {
-            // Retrieve a name service
-            lms = LMSHelper.narrow(nameService.resolve_str(lmsName));
-            if(lms == null){
-                throw new Exception();
-            }
-        } catch(Exception e) {
+        lms = SensorUtil.findLMSBinding(namingContextExt, lmsName);
+        if(lms == null){
             throw new IllegalStateException("Unable to find an LMS with name `" + lmsName + "`");
         }
 
@@ -91,32 +83,31 @@ public class SensorDriver extends SensorPOA {
             NamingServiceHandler.bind(
                     namingPair.getNamingService(),
                     NamingServiceHandler.createRef(namingPair, this, SensorHelper.class),
-                    meta.tuple.sensor
+                    meta.sensor
             );
         } catch(Exception e) {
             throw new IllegalStateException("Unable to bind Sensor to NameService!");
         }
 
-        tuple = meta.tuple;
-        alert_level = meta.alert_level;
+        metadata = new MetaData(lmsName, meta);
 
-        System.out.println("Connected and assigned id " + meta.tuple.sensor + " by LMS.");
+        System.out.println("Connected and assigned id " + meta.sensor + " by LMS.");
     }
 
     @Override
     public String id() {
-        return tuple.sensor;
+        return metadata.sensorMeta.sensor;
     }
 
     @Override
     public String zone() {
-        return tuple.zone;
+        return metadata.sensorMeta.zone;
     }
 
     @Override
     public boolean powerOff() {
         if(power_on){
-            lms.removeSensor(tuple);
+            lms.removeSensor(metadata.sensorMeta);
             power_on = false;
             return true;
         }
@@ -126,7 +117,7 @@ public class SensorDriver extends SensorPOA {
     @Override
     public boolean powerOn() {
         if(!power_on){
-            lms.registerSensor(tuple.zone);
+            lms.registerSensor(metadata.sensorMeta.zone);
             power_on = true;
             return true;
         }
@@ -158,15 +149,24 @@ public class SensorDriver extends SensorPOA {
 
         Reading reading = new Reading(System.currentTimeMillis(), measurement);
 
+        try {
+            lms.ping();
+        } catch(Exception e) {
+            lms = SensorUtil.findLMSBinding(namingContextExt, metadata.lms);
+        }
+
         if(lms != null) {
-            lms.receiveAlert(new Alert(reading, tuple));
+            MetaData config = new MetaData(lms.name(), metadata.sensorMeta);
+            lms.receiveAlert(new Alert(config, reading));
+        } else {
+            System.err.println("LMS `" + metadata.lms + "` is unreachable!");
         }
 
         current = reading;
         readingLog.add(reading);
 
-        if(measurement > alert_level){
-            System.err.println("Reading is above alert level of " + alert_level + " at " + measurement + "!");
+        if(measurement > metadata.sensorMeta.alert_level){
+            System.err.println("Reading is above alert level of " + metadata.sensorMeta.alert_level + " at " + measurement + "!");
         } else {
             System.out.println("Registered new reading: " + measurement);
         }

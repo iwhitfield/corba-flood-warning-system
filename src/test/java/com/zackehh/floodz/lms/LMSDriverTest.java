@@ -1,8 +1,9 @@
 package com.zackehh.floodz.lms;
 
 import com.zackehh.corba.common.Alert;
+import com.zackehh.corba.common.MetaData;
 import com.zackehh.corba.common.Reading;
-import com.zackehh.corba.common.SensorTuple;
+import com.zackehh.corba.common.SensorMeta;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -72,7 +73,7 @@ public class LMSDriverTest {
         Assert.assertNotNull(zone.get("1"));
         Assert.assertEquals(zone.get("1").measurement, 0);
 
-        lms.removeSensor(new SensorTuple(Zones.HUDDERSFIELD.name(), "1"));
+        lms.removeSensor(new SensorMeta(Zones.HUDDERSFIELD.name(), "1", 0));
 
         Assert.assertNotNull(zone);
         Assert.assertEquals(zone.size(), 0);
@@ -91,7 +92,7 @@ public class LMSDriverTest {
         Assert.assertNotNull(zone.get("1"));
         Assert.assertEquals(zone.get("1").measurement, 0);
 
-        lms.removeSensor(new SensorTuple(Zones.HUDDERSFIELD.name(), "2"));
+        lms.removeSensor(new SensorMeta(Zones.HUDDERSFIELD.name(), "2", 0));
 
         Assert.assertNotNull(zone);
         Assert.assertEquals(zone.size(), 1);
@@ -99,7 +100,7 @@ public class LMSDriverTest {
 
     @Test
     public void testRemoveSensorWithInvalidZone() throws Exception {
-        lms.removeSensor(new SensorTuple(Zones.HUDDERSFIELD.name(), "1"));
+        lms.removeSensor(new SensorMeta(Zones.HUDDERSFIELD.name(), "1", 0));
     }
 
     @Test
@@ -115,8 +116,11 @@ public class LMSDriverTest {
 
         lms.receiveAlert(
                 new Alert(
-                        new Reading(System.currentTimeMillis(), 45),
-                        new SensorTuple(Zones.HUDDERSFIELD.name(), "1")
+                        new MetaData(
+                                lms.name(),
+                                new SensorMeta(Zones.HUDDERSFIELD.name(), "1", 0)
+                        ),
+                        new Reading(System.currentTimeMillis(), 45)
                 )
         );
 
@@ -129,8 +133,11 @@ public class LMSDriverTest {
 
         lms.receiveAlert(
                 new Alert(
-                        new Reading(System.currentTimeMillis(), 65),
-                        new SensorTuple(Zones.HUDDERSFIELD.name(), "1")
+                        new MetaData(
+                                lms.name(),
+                                new SensorMeta(Zones.HUDDERSFIELD.name(), "1", 0)
+                        ),
+                        new Reading(System.currentTimeMillis(), 65)
                 )
         );
 
@@ -146,8 +153,11 @@ public class LMSDriverTest {
     public void testReceiveAlertWithInvalidZone() throws Exception {
         lms.receiveAlert(
                 new Alert(
-                        new Reading(System.currentTimeMillis(), 45),
-                        new SensorTuple(Zones.HUDDERSFIELD.name(), "1")
+                        new MetaData(
+                                lms.name(),
+                                new SensorMeta(Zones.HUDDERSFIELD.name(), "1", 0)
+                        ),
+                        new Reading(System.currentTimeMillis(), 45)
                 )
         );
 
@@ -170,8 +180,11 @@ public class LMSDriverTest {
 
         lms.receiveAlert(
                 new Alert(
-                        new Reading(System.currentTimeMillis(), 45),
-                        new SensorTuple(Zones.HUDDERSFIELD.name(), "1")
+                        new MetaData(
+                                lms.name(),
+                                new SensorMeta(Zones.HUDDERSFIELD.name(), "1", 0)
+                        ),
+                        new Reading(System.currentTimeMillis(), 45)
                 )
         );
 

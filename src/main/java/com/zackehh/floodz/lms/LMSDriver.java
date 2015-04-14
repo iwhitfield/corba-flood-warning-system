@@ -1,26 +1,19 @@
 package com.zackehh.floodz.lms;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.Reading;
 import com.zackehh.corba.common.SensorMeta;
-import com.zackehh.corba.common.SensorTuple;
 import com.zackehh.corba.lms.LMSHelper;
 import com.zackehh.corba.lms.LMSPOA;
 import com.zackehh.corba.rmc.RMC;
-import com.zackehh.corba.rmc.RMCHelper;
-import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.Levels;
 import com.zackehh.floodz.common.NamingServiceHandler;
 import com.zackehh.floodz.util.InputReader;
-import org.apache.commons.io.IOUtils;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,27 +27,27 @@ public class LMSDriver extends LMSPOA {
     private final ConcurrentHashMap<String, Reading> alertStates = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Reading>> zoneMapping = new ConcurrentHashMap<>();
     private final List<Alert> alertLog = new ArrayList<>();
-    private final ObjectMapper mapper = new ObjectMapper();
 
     private HashMap<String, Levels> levels;
 
-    private InputReader console;
+    private NamingContextExt nameService;
     private RMC rmc;
     private String name;
     private final ORB orb;
 
     LMSDriver(){
         // testing ctor
-        this.levels = getOnMyLevels();
+        this.levels = LMSUtil.getOnMyLevels();
         this.orb = null;
     }
 
     public LMSDriver(String[] args, LMSArgs lArgs){
-        levels = getOnMyLevels();
+        levels = LMSUtil.getOnMyLevels();
+
+        InputReader console = new InputReader(System.in);
 
         name = lArgs.name;
         if (name == null) {
-            console = new InputReader(System.in);
             name = console.readString("Please enter the station name: ");
         }
 
@@ -64,7 +57,6 @@ public class LMSDriver extends LMSPOA {
         // Initialise the ORB
         orb = ORB.init(args, null);
 
-        NamingContextExt nameService;
         try {
             // Retrieve a name service
             nameService = NamingServiceHandler.register(orb, this, name, LMSHelper.class);
@@ -76,13 +68,8 @@ public class LMSDriver extends LMSPOA {
         }
 
         // Obtain the Sensor reference in the Naming service
-        try {
-            // Retrieve a name service
-            rmc = RMCHelper.narrow(nameService.resolve_str(Constants.REGIONAL_MONITORING_CENTRE));
-            if(rmc == null){
-                throw new Exception();
-            }
-        } catch(Exception e) {
+        rmc = LMSUtil.findRMCBinding(nameService);
+        if(rmc == null){
             throw new IllegalStateException("Unable to find RMC!");
         }
 
@@ -97,6 +84,11 @@ public class LMSDriver extends LMSPOA {
     @Override
     public String name() {
         return name;
+    }
+
+    @Override
+    public boolean ping() {
+        return true;
     }
 
     @Override
@@ -117,25 +109,25 @@ public class LMSDriver extends LMSPOA {
 
     @Override
     public void receiveAlert(Alert alert) {
-        logger.info("Received alert from sensor #{} in zone `{}`", alert.pair.sensor, alert.pair.zone);
+        logger.info("Received alert from sensor #{} in zone `{}`", alert.meta.sensorMeta.sensor, alert.meta.sensorMeta.zone);
 
-        ConcurrentHashMap<String, Reading> zone = zoneMapping.get(alert.pair.zone);
+        ConcurrentHashMap<String, Reading> zone = zoneMapping.get(alert.meta.sensorMeta.zone);
 
         if(zone != null){
-            zone.put(alert.pair.sensor, alert.reading);
+            zone.put(alert.meta.sensorMeta.sensor, alert.reading);
         } else {
-            logger.warn("Measurement received from unregistered zone: {}", alert.pair.zone);
+            logger.warn("Measurement received from unregistered zone: {}", alert.meta.sensorMeta.zone);
             return;
         }
 
         alertLog.add(alert);
 
-        int alert_level = getLevelsForZone(alert.pair.zone).getAlertLevel();
+        int alert_level = LMSUtil.getLevelsForZone(levels, alert.meta.sensorMeta.zone).getAlertLevel();
 
         if(alert.reading.measurement > alert_level){
-            logger.warn("Registered alert {} from Sensor #{}", alert.reading.measurement, alert.pair.sensor);
+            logger.warn("Registered alert {} from Sensor #{}", alert.reading.measurement, alert.meta.sensorMeta.sensor);
         } else {
-            logger.info("Registered reading {} from Sensor #{}", alert.reading.measurement, alert.pair.sensor);
+            logger.info("Registered reading {} from Sensor #{}", alert.reading.measurement, alert.meta.sensorMeta.sensor);
         }
 
         double avg = 0;
@@ -148,30 +140,42 @@ public class LMSDriver extends LMSPOA {
 
         avg = Math.round((avg / size) * 100.0) / 100.0;
 
+        try {
+            rmc.ping();
+        } catch(Exception e) {
+            rmc = LMSUtil.findRMCBinding(nameService);
+        }
+
         if(avg >= alert_level && size > 1){
 
-            logger.info("Multiple warnings for zone `{}`, forwarding to RMC...", alert.pair.zone);
+            logger.info("Multiple warnings for zone `{}`, forwarding to RMC...", alert.meta.sensorMeta.zone);
 
             if(rmc != null) {
                 rmc.receiveAlert(alert);
+            } else {
+                logger.warn("RMC is unreachable!");
             }
 
-            alertStates.put(alert.pair.zone, new Reading(alert.reading.time, avg));
+            alertStates.put(alert.meta.sensorMeta.zone, new Reading(alert.reading.time, avg));
         } else {
 
-            if(alertStates.containsKey(alert.pair.zone)){
-                rmc.cancelAlert(alert.pair);
-                alertStates.remove(alert.pair.zone);
+            if(alertStates.containsKey(alert.meta.sensorMeta.zone)){
+                if(rmc != null) {
+                    rmc.cancelAlert(alert.meta.sensorMeta);
+                } else {
+                    logger.warn("RMC is unreachable!");
+                }
+                alertStates.remove(alert.meta.sensorMeta.zone);
             }
         }
 
     }
 
     @Override
-    public void removeSensor(SensorTuple tuple) {
-        logger.info("Removed Sensor #{} from zone `{}`", tuple.sensor, tuple.zone);
-        if(zoneMapping.containsKey(tuple.zone)){
-            zoneMapping.get(tuple.zone).remove(tuple.sensor);
+    public void removeSensor(SensorMeta sensorMeta) {
+        logger.info("Removed Sensor #{} from zone `{}`", sensorMeta.sensor, sensorMeta.zone);
+        if(zoneMapping.containsKey(sensorMeta.zone)){
+            zoneMapping.get(sensorMeta.zone).remove(sensorMeta.sensor);
         }
     }
 
@@ -195,7 +199,7 @@ public class LMSDriver extends LMSPOA {
         }
         logger.info("Added Sensor #{} to zone `{}`", id, zone);
 
-        return new SensorMeta(new SensorTuple(zone, id), getLevelsForZone(zone).getAlertLevel());
+        return new SensorMeta(zone, id, LMSUtil.getLevelsForZone(levels, zone).getAlertLevel());
     }
 
     public ORB getEmbeddedOrb(){
@@ -208,31 +212,5 @@ public class LMSDriver extends LMSPOA {
 
     ConcurrentHashMap<String, ConcurrentHashMap<String, Reading>> getZoneMapping(){
         return zoneMapping;
-    }
-
-    private Levels getLevelsForZone(String zone){
-        if(!levels.containsKey(zone)){
-            return levels.get("default");
-        }
-        return levels.get(zone);
-    }
-
-    private HashMap<String, Levels> getOnMyLevels() {
-        try {
-            return mapper.readValue(
-                    IOUtils.toString(LMS.class.getResourceAsStream("/levels.json")),
-                    new TypeReference<HashMap<String, Levels>>() { }
-            );
-        } catch(IOException e) {
-            logger.warn("Unable to retrieve level mapping, creating default...");
-
-            final Levels def = new Levels(Constants.DEFAULT_WARNING_LEVEL, Constants.DEFAULT_ALERT_LEVEL);
-
-            logger.info("Set default warning level to {}, alert level to {}", def.getWarningLevel(), def.getAlertLevel());
-
-            return new HashMap<String, Levels>(){{
-                put("default", def);
-            }};
-        }
     }
 }

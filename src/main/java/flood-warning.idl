@@ -11,19 +11,20 @@ module com {
                     double measurement;
                 };
 
-                struct SensorTuple {
+                struct SensorMeta {
                     string zone;
                     string sensor;
-                };
-
-                struct SensorMeta {
-                    SensorTuple tuple;
                     long alert_level;
                 };
 
+                struct MetaData {
+                    string lms;
+                    SensorMeta sensorMeta;
+                };
+
                 struct Alert {
+                    MetaData meta;
                     Reading reading;
-                    SensorTuple pair;
                 };
 
                 typedef sequence<Reading> Readings;
@@ -55,10 +56,12 @@ module com {
                     readonly attribute common::AlertLog alertLog;
                     readonly attribute string name;
 
+                    boolean ping();
+
                     common::Readings getCurrentState();
                     common::SensorMeta registerSensor(in string zone);
                     void receiveAlert(in common::Alert alert);
-                    void removeSensor(in common::SensorTuple tuple);
+                    void removeSensor(in common::SensorMeta tuple);
                 };
 
             };
@@ -66,11 +69,14 @@ module com {
             module rmc {
 
                 interface RMC {
-                    void cancelAlert(in common::SensorTuple tuple);
+                    boolean ping();
+
+                    void cancelAlert(in common::SensorMeta tuple);
                     void receiveAlert(in common::Alert alert);
                     boolean registerLMSConnection(in string name);
 
                     common::AlertLog getAlerts();
+                    common::Readings getDistrictState(in string distinct);
                 };
 
             };
