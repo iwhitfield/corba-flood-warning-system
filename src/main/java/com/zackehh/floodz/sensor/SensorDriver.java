@@ -27,7 +27,7 @@ public class SensorDriver extends SensorPOA {
 
     private LMS lms;
     private NamingContextExt namingContextExt;
-    private ORB orb;
+    private final ORB orb;
 
     @SuppressWarnings("unused")
     SensorDriver(MetaData meta){

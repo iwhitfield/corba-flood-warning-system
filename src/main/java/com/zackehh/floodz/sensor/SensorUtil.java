@@ -4,7 +4,7 @@ import com.zackehh.corba.lms.LMS;
 import com.zackehh.corba.lms.LMSHelper;
 import org.omg.CosNaming.NamingContextExt;
 
-public class SensorUtil {
+class SensorUtil {
 
     public static LMS findLMSBinding(NamingContextExt namingContextExt, String lmsName){
         LMS lms;

@@ -23,21 +23,25 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class LMSDriver extends LMSPOA {
 
+    // log4j
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ConcurrentHashMap<String, Reading> alertStates = new ConcurrentHashMap<>();
+    // log based variables
+    private final ConcurrentHashMap<String, Alert> alertStates = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Reading>> zoneMapping = new ConcurrentHashMap<>();
     private final List<Alert> alertLog = new ArrayList<>();
 
-    private HashMap<String, Levels> levels;
+    // final variables
+    private final HashMap<String, Levels> levels;
+    private final ORB orb;
 
+    // corba variables
     private NamingContextExt nameService;
     private RMC rmc;
     private String name;
-    private final ORB orb;
 
+    // testing ctor
     LMSDriver(){
-        // testing ctor
         this.levels = LMSUtil.getOnMyLevels();
         this.orb = null;
     }
@@ -93,14 +97,14 @@ public class LMSDriver extends LMSPOA {
     }
 
     @Override
-    public Reading[] getCurrentState() {
-        List<Reading> currentState = new ArrayList<>();
+    public Alert[] getCurrentState() {
+        List<Alert> currentState = new ArrayList<>();
 
-        for(Map.Entry<String, Reading> zone : alertStates.entrySet()){
+        for(Map.Entry<String, Alert> zone : alertStates.entrySet()){
             currentState.add(zone.getValue());
         }
 
-        return currentState.toArray(new Reading[currentState.size()]);
+        return currentState.toArray(new Alert[currentState.size()]);
     }
 
     @Override
@@ -162,17 +166,17 @@ public class LMSDriver extends LMSPOA {
                 logger.warn("RMC is unreachable!");
             }
 
-            alertStates.put(alert.meta.sensorMeta.zone, new Reading(alert.reading.time, avg));
+            alertStates.put(alert.meta.sensorMeta.zone, new Alert(alert.meta, new Reading(alert.reading.time, avg)));
         } else {
 
-            logger.info("Removed alert state for zone `{}`, forwarding to RMC...", alert.meta.sensorMeta.zone);
+            if(rmc != null) {
+                rmc.cancelAlert(new MetaData(name, alert.meta.sensorMeta));
+            } else {
+                logger.warn("RMC is unreachable!");
+            }
 
             if(alertStates.containsKey(alert.meta.sensorMeta.zone)){
-                if(rmc != null) {
-                    rmc.cancelAlert(new MetaData(name, alert.meta.sensorMeta));
-                } else {
-                    logger.warn("RMC is unreachable!");
-                }
+                logger.info("Removed alert state for zone `{}`, forwarding to RMC...", alert.meta.sensorMeta.zone);
                 alertStates.remove(alert.meta.sensorMeta.zone);
             }
         }

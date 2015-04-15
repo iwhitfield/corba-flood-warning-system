@@ -6,7 +6,7 @@ import com.zackehh.floodz.common.Constants;
 import java.util.Date;
 import java.util.Scanner;
 
-public class Sensor {
+public class SensorClient {
 
     private static SensorDriver sensorDriver;
 

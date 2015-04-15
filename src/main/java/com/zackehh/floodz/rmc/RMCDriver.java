@@ -10,6 +10,7 @@ import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.corba.rmc.RMCPOA;
 import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.NamingServiceHandler;
+import com.zackehh.floodz.common.SQLiteClient;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
@@ -117,7 +118,7 @@ public class RMCDriver extends RMCPOA {
     }
 
     @Override
-    public Reading[] getDistrictState(String distinct) {
+    public Alert[] getDistrictState(String distinct) {
         LMS lms;
         try {
             // Retrieve a name service
@@ -127,7 +128,7 @@ public class RMCDriver extends RMCPOA {
             }
         } catch(Exception e) {
             logger.error("Unable to find LMS {}!", distinct);
-            return new Reading[]{};
+            return new Alert[]{};
         }
         return lms.getCurrentState();
     }

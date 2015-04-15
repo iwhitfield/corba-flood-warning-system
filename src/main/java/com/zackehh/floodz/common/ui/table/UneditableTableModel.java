@@ -7,7 +7,7 @@ import java.util.Vector;
  * Extremely simply table model to remove the ability to
  * edit the table, and the marks all fields as a String.
  */
-public class UneditableTableModel extends DefaultTableModel {
+class UneditableTableModel extends DefaultTableModel {
 
     /**
      * Accept Vector input.

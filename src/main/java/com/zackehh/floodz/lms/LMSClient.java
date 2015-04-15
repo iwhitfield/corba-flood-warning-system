@@ -2,9 +2,7 @@ package com.zackehh.floodz.lms;
 
 import com.beust.jcommander.JCommander;
 
-public class LMS {
-
-    private static LMSDriver lmsDriver;
+public class LMSClient {
 
     public static void main(String[] args) throws Exception {
         LMSArgs lArgs = new LMSArgs();
@@ -13,7 +11,7 @@ public class LMS {
         j.setAcceptUnknownOptions(true);
         j.parse(args);
 
-        lmsDriver = new LMSDriver(args, lArgs);
+        LMSDriver lmsDriver = new LMSDriver(args, lArgs);
 
         lmsDriver.getEmbeddedOrb().run();
     }

@@ -9,24 +9,25 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SQLiteClient  {
+public class SQLiteClient {
 
     private final Connection db;
+    private static SQLiteClient instance = null;
 
-    public SQLiteClient() throws SQLException {
+    private SQLiteClient() throws SQLException {
         try {
             Class.forName("org.sqlite.JDBC");
-        } catch(ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
             throw new SQLException("Unable to load db driver!");
         }
 
-        this.db = DriverManager.getConnection("jdbc:sqlite:local.db");
+        db = DriverManager.getConnection("jdbc:sqlite:local.db");
 
         Statement createTableStatement = db.createStatement();
 
         createTableStatement.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS ALERTS " +
-                "(ID INTEGER PRIMARY KEY    AUTOINCREMENT," +
+                "(ID            INTEGER     PRIMARY KEY    AUTOINCREMENT," +
                 " LMS           TEXT        NOT NULL," +
                 " TIME          DATE        NOT NULL," +
                 " ZONE          CHAR(26)    NOT NULL," +
@@ -37,7 +38,18 @@ public class SQLiteClient  {
         createTableStatement.close();
     }
 
-    public boolean deleteAlert(MetaData metadata){
+    public static SQLiteClient getInstance() {
+        try {
+            if (instance == null) {
+                instance = new SQLiteClient();
+            }
+            return instance;
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public synchronized boolean deleteAlert(MetaData metadata) {
         try {
             PreparedStatement deleteStatement = db.prepareStatement(
                     "DELETE FROM ALERTS WHERE LMS=? AND ZONE=? AND SENSOR=?;"
@@ -48,15 +60,15 @@ public class SQLiteClient  {
             deleteStatement.setString(3, metadata.sensorMeta.sensor);
 
             deleteStatement.executeUpdate();
-            deleteStatement.close();
-        } catch(SQLException e){
+            deleteStatement.closeOnCompletion();
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
         return true;
     }
 
-    public boolean insertAlert(Alert alert){
+    public synchronized boolean insertAlert(Alert alert) {
         try {
             PreparedStatement insertStatement = db.prepareStatement(
                     "INSERT INTO ALERTS (LMS,TIME,ZONE,SENSOR,MEASUREMENT)" +
@@ -70,19 +82,20 @@ public class SQLiteClient  {
             insertStatement.setInt(5, alert.reading.measurement);
 
             insertStatement.executeUpdate();
-            insertStatement.close();
-        } catch(SQLException e){
+            insertStatement.closeOnCompletion();
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
         return true;
     }
 
-    public boolean updateAlert(Alert alert){
+    public synchronized boolean updateAlert(Alert alert) {
         try {
             PreparedStatement updateStatement = db.prepareStatement(
-                    "UPDATE ALERTS SET MEASUREMENT=? AND TIME=? " +
-                    "WHERE LMS=? AND ZONE=? AND SENSOR=?;"
+                    "UPDATE ALERTS " +
+                            "SET MEASUREMENT=? AND TIME=? " +
+                            "WHERE LMS=? AND ZONE=? AND SENSOR=?;"
             );
 
             updateStatement.setInt(1, alert.reading.measurement);
@@ -92,15 +105,15 @@ public class SQLiteClient  {
             updateStatement.setString(5, alert.meta.sensorMeta.sensor);
 
             updateStatement.executeUpdate();
-            updateStatement.close();
-        } catch(SQLException e){
+            updateStatement.closeOnCompletion();
+        } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
         return true;
     }
 
-    public List<Alert> retrieveAllAlerts(){
+    public List<Alert> retrieveAllAlerts() {
         List<Alert> alertLog = new ArrayList<>();
 
         try {
@@ -109,7 +122,7 @@ public class SQLiteClient  {
             ResultSet resultSet = alertQueryStatement
                     .executeQuery("SELECT * FROM ALERTS ORDER BY TIME ASC;");
 
-            while(resultSet.next()){
+            while (resultSet.next()) {
                 alertLog.add(new Alert(
                         new MetaData(
                                 resultSet.getString("LMS"),
@@ -121,11 +134,33 @@ public class SQLiteClient  {
 
             resultSet.close();
             alertQueryStatement.close();
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
 
         return alertLog;
+    }
+
+    public List<String> getStoredLMSNames() {
+        List<String> lmsNames = new ArrayList<>();
+
+        try {
+            Statement lmsNamesStatement = db.createStatement();
+
+            ResultSet resultSet = lmsNamesStatement
+                    .executeQuery("SELECT DISTINCT LMS FROM ALERTS;");
+
+            while (resultSet.next()) {
+                lmsNames.add(resultSet.getString("LMS"));
+            }
+
+            resultSet.close();
+            lmsNamesStatement.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return lmsNames;
     }
 
 }

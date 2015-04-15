@@ -3,6 +3,7 @@ package com.zackehh.floodz.rmc;
 import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
 import com.zackehh.floodz.common.SQLiteClient;
+import com.zackehh.floodz.common.ui.cards.OptionsPanel;
 import com.zackehh.floodz.common.ui.table.BaseTable;
 import com.zackehh.floodz.common.ui.table.RMCTableModel;
 
@@ -18,15 +19,13 @@ public class RMCClient extends JFrame {
 
     private static RMCDriver rmcDriver;
     private static RMCTableModel rmcTableModel;
+    private static SQLiteClient sqLiteClient;
 
-    private final SQLiteClient sqLiteClient;
-
-    private Vector<Vector<String>> messageList = new Vector<>();
+    private final Vector<Vector<String>> messageList = new Vector<>();
 
     public static void main(String[] args) throws SQLException {
-        RMCClient rmc = new RMCClient();
-
-        rmcDriver = new RMCDriver(args, rmc);
+        // Initialize
+        new RMCClient(args);
 
         // Start the initial loading of the existing items
         new Thread(new Runnable() {
@@ -36,9 +35,10 @@ public class RMCClient extends JFrame {
         }).start();
     }
 
-    public RMCClient() throws SQLException {
+    private RMCClient(String[] args) {
         // Set up variables
-        sqLiteClient = new SQLiteClient();
+        sqLiteClient = SQLiteClient.getInstance();
+        rmcDriver = new RMCDriver(args, this);
 
         // Set the application title as well as the username
         setTitle("YoloSwagz");
@@ -54,14 +54,21 @@ public class RMCClient extends JFrame {
         Container cp = getContentPane();
         cp.setLayout(new BorderLayout());
 
+        JPanel mainLayout = new JPanel(new BorderLayout());
+
         // Create a new card layout
         JPanel cards = new JPanel(new CardLayout());
 
         // Add the card to the CardLayout
         cards.add(new OverviewCard(), "Overview");
 
+        // Add the layout to the panel
+        mainLayout.add(new OptionsPanel(rmcDriver), BorderLayout.NORTH);
+
         // Add the CardLayout to the Container
-        cp.add(cards);
+        mainLayout.add(cards, BorderLayout.SOUTH);
+
+        cp.add(mainLayout);
 
         // Pack the UI and set the frame
         pack();

@@ -19,6 +19,7 @@ public class BaseTable extends JTable {
      * @param data          the data Vector
      * @param columns       the columns Vector
      */
+    @SuppressWarnings("unused")
     public BaseTable(Vector<Vector<String>> data, Vector<String> columns){
         setModel(new UneditableTableModel(data, columns));
         init();
@@ -30,6 +31,7 @@ public class BaseTable extends JTable {
      * @param data          the data Array
      * @param columns       the columns Array
      */
+    @SuppressWarnings("unused")
     public BaseTable(Object[][] data, Object[] columns){
         setModel(new UneditableTableModel(data, columns));
         init();

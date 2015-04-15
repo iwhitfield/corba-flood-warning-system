@@ -27,9 +27,10 @@ module com {
                     Reading reading;
                 };
 
+                typedef sequence<Alert> Alerts;
+                typedef sequence<string> LMSNames;
                 typedef sequence<Reading> Readings;
                 typedef sequence<string> Zones;
-                typedef sequence<Alert> AlertLog;
 
             };
 
@@ -53,12 +54,12 @@ module com {
             module lms {
 
                 interface LMS {
-                    readonly attribute common::AlertLog alertLog;
+                    readonly attribute common::Alerts alertLog;
                     readonly attribute string name;
 
                     boolean ping();
 
-                    common::Readings getCurrentState();
+                    common::Alerts getCurrentState();
                     common::SensorMeta registerSensor(in string zone);
                     void receiveAlert(in common::Alert alert);
                     void removeSensor(in common::SensorMeta tuple);
@@ -75,8 +76,8 @@ module com {
                     void receiveAlert(in common::Alert alert);
                     boolean registerLMSConnection(in string name);
 
-                    common::AlertLog getAlerts();
-                    common::Readings getDistrictState(in string distinct);
+                    common::Alerts getAlerts();
+                    common::Alerts getDistrictState(in string distinct);
                 };
 
             };

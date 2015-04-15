@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.HashMap;
 
-public class LMSUtil {
+class LMSUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(LMSUtil.class);
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -44,7 +44,7 @@ public class LMSUtil {
     public static HashMap<String, Levels> getOnMyLevels() {
         try {
             return mapper.readValue(
-                    IOUtils.toString(LMS.class.getResourceAsStream("/levels.json")),
+                    IOUtils.toString(LMSClient.class.getResourceAsStream("/levels.json")),
                     new TypeReference<HashMap<String, Levels>>() { }
             );
         } catch(IOException e) {

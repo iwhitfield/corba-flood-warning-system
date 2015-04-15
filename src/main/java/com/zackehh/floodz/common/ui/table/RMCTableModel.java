@@ -81,10 +81,6 @@ public class RMCTableModel extends UneditableTableModel {
         }
     }
 
-    public void removeAlert(Alert alert){
-        removeAlert(alert.meta);
-    }
-
     public void removeAlert(MetaData metadata){
         String id = RMCUtil.generateAlertId(metadata);
 

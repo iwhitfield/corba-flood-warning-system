@@ -4,6 +4,7 @@ import com.beust.jcommander.Parameter;
 
 class LMSArgs {
 
+    @SuppressWarnings("unused")
     @Parameter(names = "-name", description = "Name of the Local Monitoring Station")
     public String name;
 
