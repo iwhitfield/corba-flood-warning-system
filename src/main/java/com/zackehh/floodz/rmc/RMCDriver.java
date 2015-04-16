@@ -124,27 +124,13 @@ public class RMCDriver extends RMCPOA {
 
     @Override
     public Alert[] getDistrictState(String district) {
-        LMS lms = getConnectedLMS(district);
+        LMS lms = NamingServiceHandler.retrieveObject(
+                nameService, district, LMS.class, LMSHelper.class
+        );
         if(lms == null){
             return new Alert[]{};
         }
         return lms.getCurrentState();
-    }
-
-    @Override
-    public LMS getConnectedLMS(String lmsName) {
-        LMS lms;
-        try {
-            // Retrieve a name service
-            lms = LMSHelper.narrow(nameService.resolve_str(lmsName));
-            if(lms == null){
-                throw new Exception();
-            }
-        } catch(Exception e) {
-            logger.error("Unable to find LMS {}!", lmsName);
-            return null;
-        }
-        return lms;
     }
 
     @Override
@@ -154,5 +140,11 @@ public class RMCDriver extends RMCPOA {
 
     public ORB getEmbeddedOrb(){
         return this.orb;
+    }
+
+    public LMS getConnectedLMS(String name) {
+        return NamingServiceHandler.retrieveObject(
+                nameService, name, LMS.class, LMSHelper.class
+        );
     }
 }

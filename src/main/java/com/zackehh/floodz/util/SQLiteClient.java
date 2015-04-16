@@ -94,8 +94,8 @@ public class SQLiteClient {
         try {
             PreparedStatement updateStatement = db.prepareStatement(
                     "UPDATE ALERTS " +
-                            "SET MEASUREMENT=? AND TIME=? " +
-                            "WHERE LMS=? AND ZONE=? AND SENSOR=?;"
+                    "SET MEASUREMENT=? AND TIME=? " +
+                    "WHERE LMS=? AND ZONE=? AND SENSOR=?;"
             );
 
             updateStatement.setInt(1, alert.reading.measurement);

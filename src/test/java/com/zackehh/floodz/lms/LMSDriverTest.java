@@ -9,7 +9,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 public class LMSDriverTest {
 
@@ -36,7 +36,7 @@ public class LMSDriverTest {
 
         Assert.assertEquals(lms.getZoneMapping().size(), 1);
 
-        ConcurrentHashMap<String, Reading> zone = lms.getZone(Zones.HUDDERSFIELD.name());
+        ConcurrentSkipListMap<String, Reading> zone = lms.getZone(Zones.HUDDERSFIELD.name());
 
         Assert.assertNotNull(zone);
         Assert.assertEquals(zone.size(), 1);
@@ -52,7 +52,7 @@ public class LMSDriverTest {
         Assert.assertEquals(lms.getZoneMapping().size(), 2);
 
         // TODO
-        ConcurrentHashMap<String, Reading> zone = lms.getZone(Zones.HUDDERSFIELD.name());
+        ConcurrentSkipListMap<String, Reading> zone = lms.getZone(Zones.HUDDERSFIELD.name());
 
         Assert.assertNotNull(zone);
         Assert.assertEquals(zone.size(), 1);
@@ -66,7 +66,7 @@ public class LMSDriverTest {
 
         Assert.assertEquals(lms.getZoneMapping().size(), 1);
 
-        ConcurrentHashMap<String, Reading> zone = lms.getZone(Zones.HUDDERSFIELD.name());
+        ConcurrentSkipListMap<String, Reading> zone = lms.getZone(Zones.HUDDERSFIELD.name());
 
         Assert.assertNotNull(zone);
         Assert.assertEquals(zone.size(), 1);
@@ -85,7 +85,7 @@ public class LMSDriverTest {
 
         Assert.assertEquals(lms.getZoneMapping().size(), 1);
 
-        ConcurrentHashMap<String, Reading> zone = lms.getZone(Zones.HUDDERSFIELD.name());
+        ConcurrentSkipListMap<String, Reading> zone = lms.getZone(Zones.HUDDERSFIELD.name());
 
         Assert.assertNotNull(zone);
         Assert.assertEquals(zone.size(), 1);
@@ -107,7 +107,7 @@ public class LMSDriverTest {
     public void testReceiveAlertWithValidValues() throws Exception {
         lms.registerSensor(Zones.HUDDERSFIELD.name());
 
-        ConcurrentHashMap<String, Reading> zone1 = lms.getZone(Zones.HUDDERSFIELD.name());
+        ConcurrentSkipListMap<String, Reading> zone1 = lms.getZone(Zones.HUDDERSFIELD.name());
 
         Assert.assertNotNull(zone1);
         Assert.assertEquals(zone1.size(), 1);
@@ -124,7 +124,7 @@ public class LMSDriverTest {
                 )
         );
 
-        ConcurrentHashMap<String, Reading> zone2 = lms.getZone(Zones.HUDDERSFIELD.name());
+        ConcurrentSkipListMap<String, Reading> zone2 = lms.getZone(Zones.HUDDERSFIELD.name());
 
         Assert.assertNotNull(zone2);
         Assert.assertEquals(zone2.size(), 1);
@@ -141,7 +141,7 @@ public class LMSDriverTest {
                 )
         );
 
-        ConcurrentHashMap<String, Reading> zone3 = lms.getZone(Zones.HUDDERSFIELD.name());
+        ConcurrentSkipListMap<String, Reading> zone3 = lms.getZone(Zones.HUDDERSFIELD.name());
 
         Assert.assertNotNull(zone3);
         Assert.assertEquals(zone3.size(), 1);
@@ -161,7 +161,7 @@ public class LMSDriverTest {
                 )
         );
 
-        ConcurrentHashMap<String, ConcurrentHashMap<String, Reading>> zoneMapping = lms.getZoneMapping();
+        ConcurrentSkipListMap<String, ConcurrentSkipListMap<String, Reading>> zoneMapping = lms.getZoneMapping();
 
         Assert.assertNotNull(zoneMapping);
         Assert.assertEquals(zoneMapping.size(), 0);
@@ -171,7 +171,7 @@ public class LMSDriverTest {
     public void testAlertLog() throws Exception {
         lms.registerSensor(Zones.HUDDERSFIELD.name());
 
-        ConcurrentHashMap<String, Reading> zone1 = lms.getZone(Zones.HUDDERSFIELD.name());
+        ConcurrentSkipListMap<String, Reading> zone1 = lms.getZone(Zones.HUDDERSFIELD.name());
 
         Assert.assertNotNull(zone1);
         Assert.assertEquals(zone1.size(), 1);

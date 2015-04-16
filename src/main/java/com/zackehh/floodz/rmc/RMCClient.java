@@ -4,7 +4,7 @@ import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
 import com.zackehh.floodz.common.ui.InterfaceUtils;
 import com.zackehh.floodz.util.SQLiteClient;
-import com.zackehh.floodz.common.ui.cards.OptionsPanel;
+import com.zackehh.floodz.common.ui.OptionsPanel;
 import com.zackehh.floodz.common.ui.table.BaseTable;
 import com.zackehh.floodz.common.ui.table.RMCTableModel;
 
@@ -19,10 +19,9 @@ import java.util.Vector;
 public class RMCClient extends JFrame {
 
     private static RMCDriver rmcDriver;
-    private static RMCTableModel rmcTableModel;
-    private static SQLiteClient sqLiteClient;
 
-    private final Vector<Vector<String>> messageList = new Vector<>();
+    private final RMCTableModel rmcTableModel;
+    private final SQLiteClient sqLiteClient;
 
     public static void main(String[] args) throws SQLException {
         // Initialize
@@ -40,6 +39,12 @@ public class RMCClient extends JFrame {
         // Set up variables
         sqLiteClient = SQLiteClient.getInstance();
         rmcDriver = new RMCDriver(args, this);
+        rmcTableModel = new RMCTableModel(sqLiteClient, new Vector<Vector<String>>(), new Vector<String>(){{
+            add("LMS ID");
+            add("Time");
+            add("Reporting Zone/Sensor");
+            add("Received Level");
+        }});
 
         // Set the application title as well as the username
         setTitle("YoloSwagz");
@@ -117,14 +122,6 @@ public class RMCClient extends JFrame {
         public OverviewCard(){
             // Border layout to use full window
             setLayout(new BorderLayout());
-
-            // Set the table model
-            rmcTableModel = new RMCTableModel(sqLiteClient, messageList, new Vector<String>(){{
-                add("LMS ID");
-                add("Time");
-                add("Reporting Zone/Sensor");
-                add("Received Level");
-            }});
 
             // Create an initial base table with the given column names
             BaseTable lotTable = new BaseTable(rmcTableModel);

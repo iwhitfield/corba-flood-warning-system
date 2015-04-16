@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * A wrapping class to retrieve a NameService without duplicating code. It's a
@@ -124,6 +125,15 @@ public class NamingServiceHandler {
 
         // Return the NameService and RootPOA inside of a NamingPair
         return new NamingPair(NamingContextExtHelper.narrow(namingServiceObj), rootpoa);
+    }
+
+    public static <T> T retrieveObject(NamingContextExt nameService, String name, Class<T> clazz, Class<?> helperClazz) {
+        try {
+            Method method = helperClazz.getMethod("narrow", org.omg.CORBA.Object.class);
+            return clazz.cast(method.invoke(null, nameService.resolve_str(name)));
+        } catch(Exception e) {
+            return null;
+        }
     }
 
 }

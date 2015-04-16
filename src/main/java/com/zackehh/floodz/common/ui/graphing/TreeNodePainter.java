@@ -6,16 +6,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 
-public class TextInBoxTreePane extends JComponent {
+public class TreeNodePainter extends JComponent {
 
-    private final TreeLayout<TextInBox> treeLayout;
+    private final TreeLayout<TreeNode> treeLayout;
 
-    public TextInBoxTreePane(TreeLayout<TextInBox> treeLayout) {
+    public TreeNodePainter(TreeLayout<TreeNode> treeLayout) {
         this.treeLayout = treeLayout;
         setPreferredSize(treeLayout.getBounds().getBounds().getSize());
     }
 
-    private void paintEdges(Graphics g, TextInBox parent) {
+    private void paintEdges(Graphics g, TreeNode parent) {
         if (!treeLayout.getTree().isLeaf(parent)) {
 
             Rectangle2D.Double b1 = treeLayout.getNodeBounds().get(parent);
@@ -23,7 +23,7 @@ public class TextInBoxTreePane extends JComponent {
             int x1 = (int) b1.getCenterX();
             int y1 = (int) b1.getCenterY();
 
-            for (TextInBox child : treeLayout.getTree().getChildren(parent)) {
+            for (TreeNode child : treeLayout.getTree().getChildren(parent)) {
                 Rectangle2D.Double b2 = treeLayout.getNodeBounds().get(child);
 
                 g.drawLine(x1, y1, (int) b2.getCenterX(), (int) b2.getCenterY());
@@ -33,11 +33,11 @@ public class TextInBoxTreePane extends JComponent {
         }
     }
 
-    private void paintBox(Graphics g, TextInBox textInBox) {
+    private void paintBox(Graphics g, TreeNode treeNode) {
         // draw the box in the background
         g.setColor(Color.WHITE);
 
-        Rectangle2D.Double box = treeLayout.getNodeBounds().get(textInBox);
+        Rectangle2D.Double box = treeLayout.getNodeBounds().get(treeNode);
 
         g.fillRoundRect((int) box.x, (int) box.y, (int) box.width - 1,
                 (int) box.height - 1, 10, 10);
@@ -54,7 +54,7 @@ public class TextInBoxTreePane extends JComponent {
         FontMetrics m = getFontMetrics(getFont());
 
         g.drawString(
-                textInBox.getText(),
+                treeNode.getText(),
                 (int) box.x + 10 / 2,
                 (int) box.y + m.getAscent() + m.getLeading() + 1
         );
@@ -67,8 +67,8 @@ public class TextInBoxTreePane extends JComponent {
         paintEdges(g, treeLayout.getTree().getRoot());
 
         // paint the boxes
-        for (TextInBox textInBox : treeLayout.getNodeBounds().keySet()) {
-            paintBox(g, textInBox);
+        for (TreeNode treeNode : treeLayout.getNodeBounds().keySet()) {
+            paintBox(g, treeNode);
         }
     }
 }

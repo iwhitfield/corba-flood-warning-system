@@ -6,6 +6,7 @@ import com.zackehh.corba.rmc.RMC;
 import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.util.Levels;
+import com.zackehh.floodz.common.util.NamingServiceHandler;
 import org.apache.commons.io.IOUtils;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
@@ -20,25 +21,18 @@ class LMSUtil {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public static RMC findRMCBinding(NamingContextExt namingContextExt){
-        RMC rmc;
-        // Obtain the Sensor reference in the Naming service
+        String name = Constants.REGIONAL_MONITORING_CENTRE;
+
+        RMC rmc = NamingServiceHandler.retrieveObject(namingContextExt, name, RMC.class, RMCHelper.class);
         try {
-            // Retrieve a name service
-            rmc = RMCHelper.narrow(namingContextExt.resolve_str(Constants.REGIONAL_MONITORING_CENTRE));
-            if(rmc == null){
-                return null;
-            }
-            return rmc.ping() ? rmc : null;
+            return rmc != null && rmc.ping() ? rmc : null;
         } catch(Exception e) {
             return null;
         }
     }
 
     public static Levels getLevelsForZone(HashMap<String, Levels> levels, String zone){
-        if(!levels.containsKey(zone)){
-            return levels.get("default");
-        }
-        return levels.get(zone);
+        return !levels.containsKey(zone) ? levels.get("default") : levels.get(zone);
     }
 
     public static HashMap<String, Levels> getOnMyLevels() {

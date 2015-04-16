@@ -35,6 +35,7 @@ public class RMCTableModel extends UneditableTableModel {
      * @param data          the data Array
      * @param columns       the columns Array
      */
+    @SuppressWarnings("unused")
     public RMCTableModel(SQLiteClient client, Object[][] data, Object[] columns){
         super(data, columns);
         this.sqLiteClient = client;

@@ -8,55 +8,54 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public class LMSModal implements ModalInterface {
+public class LMSModal implements Modal {
 
     private final String NO_LMS_FOUND = "No LMSs found!";
+    private final DefaultListCellRenderer defaultListCellRenderer = new DefaultListCellRenderer() {
+        @Override
+        public Component getListCellRendererComponent(JList list, Object value, int index,
+                                                      boolean isSelected, boolean cellHasFocus) {
+            setOpaque(false);
+            return super.getListCellRendererComponent(list, value, index, false, false);
+        }
+    };
 
     private JDialog jDialog;
-    private RMCDriver rmcDriver;
-    private SQLiteClient sqLiteClient;
+    private final RMCDriver rmcDriver;
+    private final SQLiteClient sqLiteClient;
 
-    public void showModal(RMCDriver rmcDriver) {
+    public LMSModal(RMCDriver rmcDriver){
         this.rmcDriver = rmcDriver;
         this.sqLiteClient = SQLiteClient.getInstance();
+    }
 
+    public void showModal() {
         List<String> names = sqLiteClient.getStoredLMSNames();
 
         if(names.size() == 0){
             names.add(NO_LMS_FOUND);
         }
 
-        String[] namesAsArray = names.toArray(new String[names.size()]);
-
-        JList<String> list = new JList<>(namesAsArray);
+        final JList<String> list = new JList<>(names.toArray(new String[names.size()]));
 
         list.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
-                JList list = (JList) evt.getSource();
-                String value = list.getSelectedValue().toString();
+                String value = list.getSelectedValue();
                 if(!NO_LMS_FOUND.equals(value)){
                     displayLMSData(value);
                 }
             }
         });
-        list.setCellRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList list, Object value, int index,
-                                                          boolean isSelected, boolean cellHasFocus) {
-                setOpaque(false);
-                return super.getListCellRendererComponent(list, value, index, false, false);
-            }
-        });
+        list.setCellRenderer(defaultListCellRenderer);
         list.setOpaque(false);
         list.setFixedCellHeight(20);
 
         JOptionPane optionPane = new JOptionPane(list, JOptionPane.INFORMATION_MESSAGE,
-                JOptionPane.DEFAULT_OPTION, null, new Object[]{}); // no buttons
+                JOptionPane.DEFAULT_OPTION, null, new Object[]{});
 
         jDialog = optionPane.createDialog("Select An LMS:");
         jDialog.setVisible(true);
@@ -67,40 +66,29 @@ public class LMSModal implements ModalInterface {
 
         Alert[] alerts = rmcDriver.getDistrictState(lms);
 
+        Object component;
+
         if(alerts.length == 0){
-            JOptionPane.showMessageDialog(null, "No alerts found at the current time.",
-                    "Current State", JOptionPane.INFORMATION_MESSAGE);
-            return;
+            component = "No alerts found at the current time.";
+        } else {
+
+            String[] readings = new String[alerts.length];
+
+            for(int i = 0; i < alerts.length; i++){
+                Alert alert = alerts[i];
+                readings[i] = alert.meta.sensorMeta.zone + " registered alert of " + alert.reading.measurement +
+                        "% at " + new Date(alert.reading.time);
+            }
+
+            JList<String> list = new JList<>(readings);
+
+            list.setCellRenderer(defaultListCellRenderer);
+            list.setOpaque(false);
+            list.setFixedCellHeight(20);
+
+            component = list;
         }
 
-        List<String> readingsAsList = new ArrayList<>();
-
-        for(Alert alert : alerts){
-            readingsAsList.add(alert.meta.sensorMeta.zone + " registered alert of " + alert.reading.measurement +
-                    "% at " + new Date(alert.reading.time));
-        }
-
-        String[] readingsAsStrings = readingsAsList.toArray(new String[readingsAsList.size()]);
-
-        JList<String> list = new JList<>(readingsAsStrings);
-
-        list.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent evt) {
-                JList list = (JList) evt.getSource();
-                displayLMSData(list.getSelectedValue().toString());
-            }
-        });
-        list.setCellRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList list, Object value, int index,
-                                                          boolean isSelected, boolean cellHasFocus) {
-                setOpaque(false);
-                return super.getListCellRendererComponent(list, value, index, false, false);
-            }
-        });
-        list.setOpaque(false);
-        list.setFixedCellHeight(20);
-
-        JOptionPane.showMessageDialog(null, list, "Current State", JOptionPane.INFORMATION_MESSAGE); // no buttons
+        JOptionPane.showMessageDialog(null, component, "Current State", JOptionPane.INFORMATION_MESSAGE);
     }
 }

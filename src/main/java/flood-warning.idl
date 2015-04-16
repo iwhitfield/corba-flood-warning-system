@@ -81,7 +81,6 @@ module com {
                     boolean registerLMSConnection(in string name);
 
                     common::Alerts getAlerts();
-                    lms::LMS getConnectedLMS(in string lmsName);
                     common::Alerts getDistrictState(in string district);
                     common::LMSNames getKnownStations();
                 };
