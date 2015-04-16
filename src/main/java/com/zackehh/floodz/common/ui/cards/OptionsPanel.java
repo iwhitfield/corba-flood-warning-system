@@ -26,7 +26,12 @@ public class OptionsPanel extends JPanel {
         viewLMSButton.setName("LMSModal");
         viewLMSButton.addActionListener(buttonListener);
 
+        JButton viewRegionButton = new JButton("View Region Map");
+        viewRegionButton.setName("RegionModal");
+        viewRegionButton.addActionListener(buttonListener);
+
         add(viewLMSButton);
+        add(viewRegionButton);
     }
 
     private class ButtonListener implements ActionListener {

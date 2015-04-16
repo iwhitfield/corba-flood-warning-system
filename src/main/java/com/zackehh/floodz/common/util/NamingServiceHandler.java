@@ -1,5 +1,6 @@
-package com.zackehh.floodz.common;
+package com.zackehh.floodz.common.util;
 
+import com.zackehh.floodz.common.Constants;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.omg.CosNaming.NamingContextExtHelper;
@@ -102,7 +103,7 @@ public class NamingServiceHandler {
      * a pair of {@link org.omg.CosNaming.NamingContextExt} and {@link org.omg.PortableServer.POA}.
      *
      * @param orb the {@link org.omg.CORBA.ORB} to use
-     * @return a {@link com.zackehh.floodz.common.NamingPair} instance
+     * @return a {@link NamingPair} instance
      */
     public static NamingPair retrieveNameService(ORB orb) throws Exception {
 

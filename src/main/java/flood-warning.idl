@@ -30,6 +30,7 @@ module com {
                 typedef sequence<Alert> Alerts;
                 typedef sequence<string> LMSNames;
                 typedef sequence<Reading> Readings;
+                typedef sequence<SensorMeta> Sensors;
                 typedef sequence<string> Zones;
 
             };
@@ -60,6 +61,7 @@ module com {
                     boolean ping();
 
                     common::Alerts getCurrentState();
+                    common::Sensors getRegisteredSensors();
                     common::SensorMeta registerSensor(in string zone);
                     void receiveAlert(in common::Alert alert);
                     void removeSensor(in common::SensorMeta tuple);
@@ -70,6 +72,8 @@ module com {
             module rmc {
 
                 interface RMC {
+                    readonly attribute string name;
+
                     boolean ping();
 
                     void cancelAlert(in common::MetaData metadata);
@@ -77,7 +81,9 @@ module com {
                     boolean registerLMSConnection(in string name);
 
                     common::Alerts getAlerts();
-                    common::Alerts getDistrictState(in string distinct);
+                    lms::LMS getConnectedLMS(in string lmsName);
+                    common::Alerts getDistrictState(in string district);
+                    common::LMSNames getKnownStations();
                 };
 
             };

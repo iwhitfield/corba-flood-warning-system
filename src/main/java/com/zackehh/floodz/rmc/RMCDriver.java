@@ -2,24 +2,25 @@ package com.zackehh.floodz.rmc;
 
 import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
-import com.zackehh.corba.common.Reading;
-import com.zackehh.corba.common.SensorMeta;
 import com.zackehh.corba.lms.LMS;
 import com.zackehh.corba.lms.LMSHelper;
 import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.corba.rmc.RMCPOA;
 import com.zackehh.floodz.common.Constants;
-import com.zackehh.floodz.common.NamingServiceHandler;
-import com.zackehh.floodz.common.SQLiteClient;
+import com.zackehh.floodz.common.util.NamingServiceHandler;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class RMCDriver extends RMCPOA {
+
+    public final Set<String> knownStations = new HashSet<>();
 
     private static final Logger logger = LoggerFactory.getLogger(RMCDriver.class);
 
@@ -28,6 +29,7 @@ public class RMCDriver extends RMCPOA {
     private final List<Alert> alerts = new ArrayList<>();
     private final ORB orb;
     private final RMCClient rmcClient;
+    private final String name = Constants.REGIONAL_MONITORING_CENTRE;
 
     @SuppressWarnings("unused")
     RMCDriver(){
@@ -43,9 +45,7 @@ public class RMCDriver extends RMCPOA {
 
         try {
             // Retrieve a name service
-            nameService = NamingServiceHandler.register(
-                    orb, this, Constants.REGIONAL_MONITORING_CENTRE, RMCHelper.class
-            );
+            nameService = NamingServiceHandler.register(orb, this, name, RMCHelper.class);
             if(nameService == null){
                 throw new Exception();
             }
@@ -69,14 +69,13 @@ public class RMCDriver extends RMCPOA {
 
         for(int i = 0; i < size; i++){
             if(alerts.get(i).meta.sensorMeta.zone.equals(metaData.sensorMeta.zone)){
+                logger.info("Removed alert from sensor #{} in {}", metaData.sensorMeta.sensor, metaData.sensorMeta.zone);
                 alerts.remove(i);
                 break;
             }
         }
 
         rmcClient.cancelAlert(metaData);
-
-        logger.info("Removed alert from sensor #{} in {}", metaData.sensorMeta.sensor, metaData.sensorMeta.zone);
 
     }
 
@@ -109,7 +108,13 @@ public class RMCDriver extends RMCPOA {
     @Override
     public boolean registerLMSConnection(String name) {
         logger.info("Successfully received connection from LMS `{}`", name);
+        knownStations.add(name);
         return true;
+    }
+
+    @Override
+    public String name() {
+        return name;
     }
 
     @Override
@@ -118,19 +123,33 @@ public class RMCDriver extends RMCPOA {
     }
 
     @Override
-    public Alert[] getDistrictState(String distinct) {
+    public Alert[] getDistrictState(String district) {
+        LMS lms = getConnectedLMS(district);
+        if(lms == null){
+            return new Alert[]{};
+        }
+        return lms.getCurrentState();
+    }
+
+    @Override
+    public LMS getConnectedLMS(String lmsName) {
         LMS lms;
         try {
             // Retrieve a name service
-            lms = LMSHelper.narrow(nameService.resolve_str(distinct));
+            lms = LMSHelper.narrow(nameService.resolve_str(lmsName));
             if(lms == null){
                 throw new Exception();
             }
         } catch(Exception e) {
-            logger.error("Unable to find LMS {}!", distinct);
-            return new Alert[]{};
+            logger.error("Unable to find LMS {}!", lmsName);
+            return null;
         }
-        return lms.getCurrentState();
+        return lms;
+    }
+
+    @Override
+    public String[] getKnownStations() {
+        return knownStations.toArray(new String[knownStations.size()]);
     }
 
     public ORB getEmbeddedOrb(){

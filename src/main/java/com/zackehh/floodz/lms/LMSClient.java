@@ -11,9 +11,7 @@ public class LMSClient {
         j.setAcceptUnknownOptions(true);
         j.parse(args);
 
-        LMSDriver lmsDriver = new LMSDriver(args, lArgs);
-
-        lmsDriver.getEmbeddedOrb().run();
+        new LMSDriver(args, lArgs).getEmbeddedOrb().run();
     }
 
 }

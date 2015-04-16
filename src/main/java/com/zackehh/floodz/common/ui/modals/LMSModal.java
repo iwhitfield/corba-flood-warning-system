@@ -1,7 +1,7 @@
 package com.zackehh.floodz.common.ui.modals;
 
 import com.zackehh.corba.common.Alert;
-import com.zackehh.floodz.common.SQLiteClient;
+import com.zackehh.floodz.util.SQLiteClient;
 import com.zackehh.floodz.rmc.RMCDriver;
 
 import javax.swing.*;
@@ -15,6 +15,8 @@ import java.util.List;
 @SuppressWarnings("unused")
 public class LMSModal implements ModalInterface {
 
+    private final String NO_LMS_FOUND = "No LMSs found!";
+
     private JDialog jDialog;
     private RMCDriver rmcDriver;
     private SQLiteClient sqLiteClient;
@@ -24,6 +26,11 @@ public class LMSModal implements ModalInterface {
         this.sqLiteClient = SQLiteClient.getInstance();
 
         List<String> names = sqLiteClient.getStoredLMSNames();
+
+        if(names.size() == 0){
+            names.add(NO_LMS_FOUND);
+        }
+
         String[] namesAsArray = names.toArray(new String[names.size()]);
 
         JList<String> list = new JList<>(namesAsArray);
@@ -31,7 +38,10 @@ public class LMSModal implements ModalInterface {
         list.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
                 JList list = (JList) evt.getSource();
-                displayLMSData(list.getSelectedValue().toString());
+                String value = list.getSelectedValue().toString();
+                if(!NO_LMS_FOUND.equals(value)){
+                    displayLMSData(value);
+                }
             }
         });
         list.setCellRenderer(new DefaultListCellRenderer() {

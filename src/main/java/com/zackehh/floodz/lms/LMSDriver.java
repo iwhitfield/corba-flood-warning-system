@@ -7,8 +7,8 @@ import com.zackehh.corba.common.SensorMeta;
 import com.zackehh.corba.lms.LMSHelper;
 import com.zackehh.corba.lms.LMSPOA;
 import com.zackehh.corba.rmc.RMC;
-import com.zackehh.floodz.common.Levels;
-import com.zackehh.floodz.common.NamingServiceHandler;
+import com.zackehh.floodz.common.util.Levels;
+import com.zackehh.floodz.common.util.NamingServiceHandler;
 import com.zackehh.floodz.util.InputReader;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
@@ -16,10 +16,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 public class LMSDriver extends LMSPOA {
 
@@ -27,8 +28,8 @@ public class LMSDriver extends LMSPOA {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     // log based variables
-    private final ConcurrentHashMap<String, Alert> alertStates = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, Reading>> zoneMapping = new ConcurrentHashMap<>();
+    private final ConcurrentSkipListMap<String, Alert> alertStates = new ConcurrentSkipListMap<>();
+    private final ConcurrentSkipListMap<String, ConcurrentSkipListMap<String, Reading>> zoneMapping = new ConcurrentSkipListMap<>();
     private final List<Alert> alertLog = new ArrayList<>();
 
     // final variables
@@ -108,6 +109,29 @@ public class LMSDriver extends LMSPOA {
     }
 
     @Override
+    public SensorMeta[] getRegisteredSensors() {
+        List<SensorMeta> metaList = new ArrayList<>();
+
+        for(Map.Entry<String, ConcurrentSkipListMap<String, Reading>> zoneMap : zoneMapping.entrySet()){
+
+            List<String> keySet = new ArrayList<>(zoneMap.getValue().keySet());
+
+            Collections.sort(keySet);
+
+            for(String key : keySet){
+                metaList.add(
+                        new SensorMeta(
+                                zoneMap.getKey(), key,
+                                LMSUtil.getLevelsForZone(levels, zoneMap.getKey()).getAlertLevel()
+                        )
+                );
+            }
+        }
+
+        return metaList.toArray(new SensorMeta[metaList.size()]);
+    }
+
+    @Override
     public Alert[] alertLog() {
         return alertLog.toArray(new Alert[alertLog.size()]);
     }
@@ -116,13 +140,13 @@ public class LMSDriver extends LMSPOA {
     public void receiveAlert(final Alert alert) {
         logger.info("Received alert from sensor #{} in zone `{}`", alert.meta.sensorMeta.sensor, alert.meta.sensorMeta.zone);
 
-        ConcurrentHashMap<String, Reading> zone = zoneMapping.get(alert.meta.sensorMeta.zone);
+        ConcurrentSkipListMap<String, Reading> zone = zoneMapping.get(alert.meta.sensorMeta.zone);
 
         if(zone != null){
             zone.put(alert.meta.sensorMeta.sensor, alert.reading);
         } else {
             logger.warn("Adding measurement from previously unregistered zone: {}", alert.meta.sensorMeta.zone);
-            zone = new ConcurrentHashMap<String, Reading>(){{
+            zone = new ConcurrentSkipListMap<String, Reading>(){{
                 put(alert.meta.sensorMeta.sensor, alert.reading);
             }};
             zoneMapping.put(alert.meta.sensorMeta.zone, zone);
@@ -198,14 +222,14 @@ public class LMSDriver extends LMSPOA {
         final String id;
 
         if (zoneMapping.containsKey(zone)) {
-            ConcurrentHashMap<String, Reading> zoneMap = zoneMapping.get(zone);
+            ConcurrentSkipListMap<String, Reading> zoneMap = zoneMapping.get(zone);
 
             id = (zoneMap.size() + 1) + "";
 
             zoneMap.put(id, reading);
         } else {
             id = "1";
-            zoneMapping.put(zone, new ConcurrentHashMap<String, Reading>() {{
+            zoneMapping.put(zone, new ConcurrentSkipListMap<String, Reading>() {{
                 put(id, reading);
             }});
         }
@@ -218,11 +242,11 @@ public class LMSDriver extends LMSPOA {
         return this.orb;
     }
 
-    ConcurrentHashMap<String, Reading> getZone(String zone){
+    ConcurrentSkipListMap<String, Reading> getZone(String zone){
         return zoneMapping.get(zone);
     }
 
-    ConcurrentHashMap<String, ConcurrentHashMap<String, Reading>> getZoneMapping(){
+    ConcurrentSkipListMap<String, ConcurrentSkipListMap<String, Reading>> getZoneMapping(){
         return zoneMapping;
     }
 }

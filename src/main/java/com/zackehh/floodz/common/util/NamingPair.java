@@ -1,4 +1,4 @@
-package com.zackehh.floodz.common;
+package com.zackehh.floodz.common.util;
 
 import org.omg.CosNaming.NamingContextExt;
 import org.omg.PortableServer.POA;

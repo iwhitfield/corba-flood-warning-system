@@ -1,4 +1,4 @@
-package com.zackehh.floodz.common;
+package com.zackehh.floodz.util;
 
 import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
@@ -35,7 +35,7 @@ public class SQLiteClient {
                 " MEASUREMENT   INT         NOT NULL)"
         );
 
-        createTableStatement.close();
+        createTableStatement.closeOnCompletion();
     }
 
     public static SQLiteClient getInstance() {

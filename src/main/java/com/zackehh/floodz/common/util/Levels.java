@@ -1,4 +1,4 @@
-package com.zackehh.floodz.common;
+package com.zackehh.floodz.common.util;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 

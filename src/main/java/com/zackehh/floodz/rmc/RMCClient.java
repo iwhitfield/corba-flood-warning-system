@@ -2,7 +2,8 @@ package com.zackehh.floodz.rmc;
 
 import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
-import com.zackehh.floodz.common.SQLiteClient;
+import com.zackehh.floodz.common.ui.InterfaceUtils;
+import com.zackehh.floodz.util.SQLiteClient;
 import com.zackehh.floodz.common.ui.cards.OptionsPanel;
 import com.zackehh.floodz.common.ui.table.BaseTable;
 import com.zackehh.floodz.common.ui.table.RMCTableModel;
@@ -53,6 +54,8 @@ public class RMCClient extends JFrame {
         // Set the container BorderLayout
         Container cp = getContentPane();
         cp.setLayout(new BorderLayout());
+
+        InterfaceUtils.setup(cp);
 
         JPanel mainLayout = new JPanel(new BorderLayout());
 
@@ -105,6 +108,7 @@ public class RMCClient extends JFrame {
 
         for(Alert oldAlert : oldAlerts){
             rmcTableModel.addAlert(oldAlert, false);
+            rmcDriver.knownStations.add(oldAlert.meta.lms);
         }
     }
 

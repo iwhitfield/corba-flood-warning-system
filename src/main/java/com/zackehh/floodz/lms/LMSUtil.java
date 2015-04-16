@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zackehh.corba.rmc.RMC;
 import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.floodz.common.Constants;
-import com.zackehh.floodz.common.Levels;
+import com.zackehh.floodz.common.util.Levels;
 import org.apache.commons.io.IOUtils;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;

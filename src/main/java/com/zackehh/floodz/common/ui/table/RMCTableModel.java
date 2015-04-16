@@ -2,7 +2,7 @@ package com.zackehh.floodz.common.ui.table;
 
 import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
-import com.zackehh.floodz.common.SQLiteClient;
+import com.zackehh.floodz.util.SQLiteClient;
 import com.zackehh.floodz.rmc.RMCUtil;
 
 import java.text.SimpleDateFormat;
