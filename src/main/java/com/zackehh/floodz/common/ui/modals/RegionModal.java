@@ -3,7 +3,6 @@ package com.zackehh.floodz.common.ui.modals;
 import com.zackehh.corba.common.SensorMeta;
 import com.zackehh.corba.lms.LMS;
 import com.zackehh.floodz.common.ui.InterfaceUtils;
-import com.zackehh.floodz.util.SQLiteClient;
 import com.zackehh.floodz.common.ui.graphing.TreeNode;
 import com.zackehh.floodz.common.ui.graphing.TreeNodePainter;
 import com.zackehh.floodz.rmc.RMCDriver;
@@ -23,14 +22,12 @@ public class RegionModal implements Modal {
 
     private final InterfaceUtils interfaceUtils;
     private final RMCDriver rmcDriver;
-    private final SQLiteClient sqLiteClient;
 
     private JDialog jDialog;
 
     public RegionModal(RMCDriver rmcDriver){
         this.interfaceUtils = InterfaceUtils.getInstance();
         this.rmcDriver = rmcDriver;
-        this.sqLiteClient = SQLiteClient.getInstance();
     }
 
     public void showModal() {
@@ -58,9 +55,12 @@ public class RegionModal implements Modal {
         ((JComponent) contentPane).setBorder(BorderFactory.createEmptyBorder(
                 10, 10, 10, 10));
         contentPane.add(new TreeNodePainter(treeLayout));
+
         dialog.pack();
+        
         dialog.setLocationRelativeTo(null);
         dialog.setModal(true);
+        dialog.setResizable(false);
         dialog.setVisible(true);
     }
 
@@ -77,6 +77,12 @@ public class RegionModal implements Modal {
                 continue;
             }
 
+            try {
+                lms.ping();
+            } catch(Exception e) {
+                continue;
+            }
+
             TreeNode lmsRoot = new TreeNode(lmsName, interfaceUtils.getStringLength(lmsName));
 
             tree.addChild(root, lmsRoot);
@@ -84,13 +90,8 @@ public class RegionModal implements Modal {
             TreeNode zone = null;
             for(SensorMeta meta : lms.getRegisteredSensors()) {
                 if (zone == null || !meta.zone.equals(zone.getText())) {
-                    if (zone != null){
-                        tree.addChild(lmsRoot, zone);
-                        zone = new TreeNode(meta.zone, interfaceUtils.getStringLength(meta.zone));
-                    } else {
-                        zone = new TreeNode(meta.zone, interfaceUtils.getStringLength(meta.zone));
-                        tree.addChild(lmsRoot, zone);
-                    }
+                    zone = new TreeNode(meta.zone, interfaceUtils.getStringLength(meta.zone));
+                    tree.addChild(lmsRoot, zone);
                 }
                 tree.addChild(zone, new TreeNode(meta.sensor, interfaceUtils.getStringLength(meta.sensor)));
             }

@@ -64,7 +64,7 @@ module com {
                     common::Sensors getRegisteredSensors();
                     common::SensorMeta registerSensor(in string zone);
                     void receiveAlert(in common::Alert alert);
-                    void removeSensor(in common::SensorMeta tuple);
+                    boolean removeSensor(in common::SensorMeta tuple);
                 };
 
             };
@@ -79,6 +79,7 @@ module com {
                     void cancelAlert(in common::MetaData metadata);
                     void receiveAlert(in common::Alert alert);
                     boolean registerLMSConnection(in string name);
+                    boolean removeLMSConnection(in string name);
 
                     common::Alerts getAlerts();
                     common::Alerts getDistrictState(in string district);

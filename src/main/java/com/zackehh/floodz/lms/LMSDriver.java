@@ -85,6 +85,19 @@ public class LMSDriver extends LMSPOA {
         } else {
             logger.info("Made successful connection to RMC");
         }
+
+        // shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                try {
+                    if(!rmc.removeLMSConnection(name)){
+                        logger.warn("Unable to unregister from RMC!");
+                    }
+                } catch(Exception e) {
+                    logger.warn("Unable to unregister from RMC!");
+                }
+            }
+        });
     }
 
     @Override
@@ -208,11 +221,13 @@ public class LMSDriver extends LMSPOA {
     }
 
     @Override
-    public void removeSensor(SensorMeta sensorMeta) {
+    public boolean removeSensor(SensorMeta sensorMeta) {
         logger.info("Removed Sensor #{} from zone `{}`", sensorMeta.sensor, sensorMeta.zone);
         if(zoneMapping.containsKey(sensorMeta.zone)){
             zoneMapping.get(sensorMeta.zone).remove(sensorMeta.sensor);
+            return true;
         }
+        return false;
     }
 
     @Override

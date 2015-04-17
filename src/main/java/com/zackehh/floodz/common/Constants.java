@@ -16,5 +16,6 @@ public final class Constants {
     public static final String REGIONAL_MONITORING_CENTRE = "Regional Monitoring Centre";
     public static final String ROOT_POA = "RootPOA";
     public static final String SENSOR = "Sensor";
+    public static final String TRADE_SERVICE = "TradingService";
 
 }

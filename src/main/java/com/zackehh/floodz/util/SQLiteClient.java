@@ -23,19 +23,31 @@ public class SQLiteClient {
 
         db = DriverManager.getConnection("jdbc:sqlite:local.db");
 
-        Statement createTableStatement = db.createStatement();
+        Statement createTableForLMS = db.createStatement();
 
-        createTableStatement.executeUpdate(
+        createTableForLMS.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS RMC " +
+                "(ID    TEXT    PRIMARY KEY," +
+                " NAME  TEXT    NOT NULL," +
+                " LMS   TEXT    NOT NULL)"
+        );
+
+        createTableForLMS.closeOnCompletion();
+
+        Statement createTableForAlerts = db.createStatement();
+
+        createTableForAlerts.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS ALERTS " +
                 "(ID            INTEGER     PRIMARY KEY    AUTOINCREMENT," +
                 " LMS           TEXT        NOT NULL," +
                 " TIME          DATE        NOT NULL," +
                 " ZONE          CHAR(26)    NOT NULL," +
                 " SENSOR        CHAR(4)     NOT NULL," +
-                " MEASUREMENT   INT         NOT NULL)"
+                " MEASUREMENT   INT         NOT NULL," +
+                " FOREIGN KEY(LMS) REFERENCES RMC(LMS))"
         );
 
-        createTableStatement.closeOnCompletion();
+        createTableForAlerts.closeOnCompletion();
     }
 
     public static SQLiteClient getInstance() {
@@ -68,6 +80,24 @@ public class SQLiteClient {
         return true;
     }
 
+    public synchronized boolean deleteLMS(String rmc, String lms) {
+        try {
+            PreparedStatement deleteStatement = db.prepareStatement(
+                    "DELETE FROM RMC WHERE NAME=? AND LMS=?;"
+            );
+
+            deleteStatement.setString(1, rmc);
+            deleteStatement.setString(2, lms);
+
+            deleteStatement.executeUpdate();
+            deleteStatement.closeOnCompletion();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     public synchronized boolean insertAlert(Alert alert) {
         try {
             PreparedStatement insertStatement = db.prepareStatement(
@@ -80,6 +110,25 @@ public class SQLiteClient {
             insertStatement.setString(3, alert.meta.sensorMeta.zone);
             insertStatement.setString(4, alert.meta.sensorMeta.sensor);
             insertStatement.setInt(5, alert.reading.measurement);
+
+            insertStatement.executeUpdate();
+            insertStatement.closeOnCompletion();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    public synchronized boolean insertLMS(String rmc, String lms) {
+        try {
+            PreparedStatement insertStatement = db.prepareStatement(
+                    "INSERT INTO RMC (NAME,LMS)" +
+                    "VALUES (?,?);"
+            );
+
+            insertStatement.setString(1, rmc);
+            insertStatement.setString(2, lms);
 
             insertStatement.executeUpdate();
             insertStatement.closeOnCompletion();
@@ -119,8 +168,10 @@ public class SQLiteClient {
         try {
             Statement alertQueryStatement = db.createStatement();
 
-            ResultSet resultSet = alertQueryStatement
-                    .executeQuery("SELECT * FROM ALERTS ORDER BY TIME ASC;");
+            ResultSet resultSet = alertQueryStatement.executeQuery(
+                    "SELECT * FROM ALERTS " +
+                    "ORDER BY TIME ASC;"
+            );
 
             while (resultSet.next()) {
                 alertLog.add(new Alert(
@@ -148,7 +199,7 @@ public class SQLiteClient {
             Statement lmsNamesStatement = db.createStatement();
 
             ResultSet resultSet = lmsNamesStatement
-                    .executeQuery("SELECT DISTINCT LMS FROM ALERTS;");
+                    .executeQuery("SELECT DISTINCT LMS FROM RMC;");
 
             while (resultSet.next()) {
                 lmsNames.add(resultSet.getString("LMS"));

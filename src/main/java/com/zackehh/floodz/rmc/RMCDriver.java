@@ -8,6 +8,7 @@ import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.corba.rmc.RMCPOA;
 import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.util.NamingServiceHandler;
+import com.zackehh.floodz.util.SQLiteClient;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
@@ -20,8 +21,6 @@ import java.util.Set;
 
 public class RMCDriver extends RMCPOA {
 
-    public final Set<String> knownStations = new HashSet<>();
-
     private static final Logger logger = LoggerFactory.getLogger(RMCDriver.class);
 
     private NamingContextExt nameService;
@@ -30,18 +29,21 @@ public class RMCDriver extends RMCPOA {
     private final ORB orb;
     private final RMCClient rmcClient;
     private final String name = Constants.REGIONAL_MONITORING_CENTRE;
+    private final SQLiteClient sqLiteClient;
 
     @SuppressWarnings("unused")
     RMCDriver(){
         // testing ctor
         this.orb = null;
         this.rmcClient = null;
+        this.sqLiteClient = SQLiteClient.getInstance();
     }
 
     public RMCDriver(String[] args, RMCClient rmcClient){
         // Initialise the ORB
         this.orb = ORB.init(args, null);
         this.rmcClient = rmcClient;
+        this.sqLiteClient = SQLiteClient.getInstance();
 
         try {
             // Retrieve a name service
@@ -108,7 +110,14 @@ public class RMCDriver extends RMCPOA {
     @Override
     public boolean registerLMSConnection(String name) {
         logger.info("Successfully received connection from LMS `{}`", name);
-        knownStations.add(name);
+        sqLiteClient.insertLMS(this.name, name);
+        return true;
+    }
+
+    @Override
+    public boolean removeLMSConnection(String name) {
+        logger.info("Removed connection from LMS `{}`", name);
+        sqLiteClient.deleteLMS(this.name, name);
         return true;
     }
 
@@ -127,15 +136,17 @@ public class RMCDriver extends RMCPOA {
         LMS lms = NamingServiceHandler.retrieveObject(
                 nameService, district, LMS.class, LMSHelper.class
         );
-        if(lms == null){
-            return new Alert[]{};
+        try {
+            return lms != null && lms.ping() ? lms.getCurrentState() : null;
+        } catch(Exception e) {
+            return null;
         }
-        return lms.getCurrentState();
     }
 
     @Override
     public String[] getKnownStations() {
-        return knownStations.toArray(new String[knownStations.size()]);
+        List<String> names = sqLiteClient.getStoredLMSNames();
+        return names.toArray(new String[names.size()]);
     }
 
     public ORB getEmbeddedOrb(){

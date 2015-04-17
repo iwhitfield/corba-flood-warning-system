@@ -77,7 +77,7 @@ public class SensorDriver extends SensorPOA {
         System.out.println("");
         System.out.println("Sensor in zone " + zoneName + " connecting to " + lmsName + "...");
 
-        SensorMeta meta = lms.registerSensor(zoneName);
+        final SensorMeta meta = lms.registerSensor(zoneName);
 
         try {
             NamingServiceHandler.bind(
@@ -92,6 +92,18 @@ public class SensorDriver extends SensorPOA {
         metadata = new MetaData(lmsName, meta);
 
         System.out.println("Connected and assigned id " + meta.sensor + " by LMS.");
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                try {
+                    if (!lms.removeSensor(meta)) {
+                        System.err.println("Unable to unregister from LMS!");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Unable to unregister from LMS!");
+                }
+            }
+        });
     }
 
     @Override

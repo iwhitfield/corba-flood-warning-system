@@ -13,7 +13,7 @@ public class OptionsPanel extends JPanel {
 
     private final RMCDriver rmcDriver;
     private final String packageName = getClass().getPackage().toString()
-            .substring(8).replace("cards", "modals");
+            .substring(8) + ".modals";
 
     private final ActionListener defaultButtonListener = new ActionListener(){
         @Override

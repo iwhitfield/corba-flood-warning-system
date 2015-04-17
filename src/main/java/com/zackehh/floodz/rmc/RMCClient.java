@@ -113,7 +113,6 @@ public class RMCClient extends JFrame {
 
         for(Alert oldAlert : oldAlerts){
             rmcTableModel.addAlert(oldAlert, false);
-            rmcDriver.knownStations.add(oldAlert.meta.lms);
         }
     }
 

@@ -58,6 +58,7 @@ public class LMSModal implements Modal {
                 JOptionPane.DEFAULT_OPTION, null, new Object[]{});
 
         jDialog = optionPane.createDialog("Select An LMS:");
+        jDialog.setResizable(false);
         jDialog.setVisible(true);
     }
 
@@ -68,7 +69,9 @@ public class LMSModal implements Modal {
 
         Object component;
 
-        if(alerts.length == 0){
+        if(alerts == null){
+            component = lms + " is no longer reachable.";
+        } else if(alerts.length == 0){
             component = "No alerts found at the current time.";
         } else {
 
