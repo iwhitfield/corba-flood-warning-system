@@ -16,18 +16,40 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Vector;
 
+/**
+ * The main GUI client of the application. Used to view
+ * existing alerts, and to view connected LMS instances.
+ * Also provides a neat way to view a map of the region in
+ * tree form.
+ */
 public class RMCClient extends JFrame {
 
+    /**
+     * An instance of the RMCDriver.
+     */
     private static RMCDriver rmcDriver;
 
+    /**
+     * The table model of the main view panel.
+     */
     private final RMCTableModel rmcTableModel;
+
+    /**
+     * A reference to the SQLite singleton.
+     */
     private final SQLiteClient sqLiteClient;
 
+    /**
+     * Main entry point of the RMC GUI. Initializes the new window and
+     * runs the RMCDriver ORB inside a new thread.
+     *
+     * @param args the program arguments
+     */
     public static void main(String[] args) throws SQLException {
-        // Initialize
+        // initialize the GUI
         new RMCClient(args);
 
-        // Start the initial loading of the existing items
+        // start the initial loading of the existing items
         new Thread(new Runnable() {
             public void run() {
                 rmcDriver.getEmbeddedOrb().run();
@@ -35,10 +57,20 @@ public class RMCClient extends JFrame {
         }).start();
     }
 
+    /**
+     * Constructor to draw the initial frame whilst setting up the
+     * required instances.
+     *
+     * @param args the program arguments
+     */
     private RMCClient(String[] args) {
-        // Set up variables
+        // get a reference to the SQLite singleton
         sqLiteClient = SQLiteClient.getInstance();
+
+        // create a new RMCDriver instance
         rmcDriver = new RMCDriver(args, this);
+
+        // create the initial table model
         rmcTableModel = new RMCTableModel(sqLiteClient, new Vector<Vector<String>>(), new Vector<String>(){{
             add("LMS ID");
             add("Time");
@@ -46,93 +78,110 @@ public class RMCClient extends JFrame {
             add("Received Level");
         }});
 
-        // Set the application title as well as the username
+        // set the application title
         setTitle("YoloSwagz");
 
-        // Exit on the exit button press
+        // exit on a button press
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent evt) {
                 System.exit(0);
             }
         });
 
-        // Set the container BorderLayout
+        // set the container borderlayout
         Container cp = getContentPane();
         cp.setLayout(new BorderLayout());
 
+        // setup the interface via the utils
         InterfaceUtils.setup(cp);
 
+        // create a panel for the main frame
         JPanel mainLayout = new JPanel(new BorderLayout());
 
-        // Create a new card layout
-        JPanel cards = new JPanel(new CardLayout());
-
-        // Add the card to the CardLayout
-        cards.add(new OverviewCard(), "Overview");
-
-        // Add the layout to the panel
+        // add components to the main frame
         mainLayout.add(new OptionsPanel(rmcDriver), BorderLayout.NORTH);
+        mainLayout.add(new OverviewCard(), BorderLayout.SOUTH);
 
-        // Add the CardLayout to the Container
-        mainLayout.add(cards, BorderLayout.SOUTH);
-
+        // add the frame to the container
         cp.add(mainLayout);
 
-        // Pack the UI and set the frame
+        // pack the ui
         pack();
 
-        // Get the screen size as a java dimension
+        // get the screen size as a java dimension
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
-        // Make the width a 1/4 of the screen
+        // make the width a 1/4 of the screen
         setPreferredSize(new Dimension(screenSize.width * 2 / 4, getSize().height));
 
-        // Unfortunate re-pack
+        // unfortunate re-pack
         pack();
 
-        // Disable resize
+        // disable resize
         setResizable(false);
 
-        // Load any existing alerts
+        // load any existing alerts
         loadExistingAlerts();
 
-        // Display!
+        // display!
         setVisible(true);
     }
 
+    /**
+     * Adds an alert to the table model.
+     *
+     * @param alert the alert to add
+     */
     public void addAlert(Alert alert){
         rmcTableModel.addAlert(alert);
     }
 
+    /**
+     * Removes an alert from the table model.
+     *
+     * @param metadata the alert meta data
+     */
     public void cancelAlert(MetaData metadata){
         rmcTableModel.removeAlert(metadata);
     }
 
+    /**
+     * Retrieves a list of existing alerts from the SQLite
+     * DB locally. Used for persistence and initial loading
+     * when opening the application.
+     */
     private void loadExistingAlerts(){
+        // load all alerts from the DB
         List<Alert> oldAlerts = sqLiteClient.retrieveAllAlerts();
-
+        // for each alert in the list
         for(Alert oldAlert : oldAlerts){
+            // add it to the table
             rmcTableModel.addAlert(oldAlert, false);
         }
     }
 
+    /**
+     * The main card containing the scrollable table to display at the
+     * bottom of the main frame.
+     */
     private class OverviewCard extends JPanel {
 
+        /**
+         * Creates a new table, placed inside a JScrollPane in order
+         * to enable an 'infinite' list of Alerts.
+         */
         public OverviewCard(){
-            // Border layout to use full window
+            // border layout to use full window
             setLayout(new BorderLayout());
 
-            // Create an initial base table with the given column names
-            BaseTable lotTable = new BaseTable(rmcTableModel);
-
-            // Add the table to a scrolling pane
+            // add a base table to a scrolling pane
             JScrollPane itemListPanel = new JScrollPane(
-                    lotTable,
+                    new BaseTable(rmcTableModel),
                     JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                     JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
             );
 
-            // Add the scrolling pane to the main panel
+            // add the scrolling pane to the main panel
             add(itemListPanel, BorderLayout.SOUTH);
         }
 

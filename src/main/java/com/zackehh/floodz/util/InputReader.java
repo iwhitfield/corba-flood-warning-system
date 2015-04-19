@@ -5,15 +5,35 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+/**
+ * A simple handler for reading input from a designated InputStream. Used often
+ * with System.in when setting up varying components within the system.
+ */
 @SuppressWarnings("unused")
 public class InputReader {
 
+    /**
+     * The reader to accept input from.
+     */
     private final BufferedReader reader;
 
+    /**
+     * A simple constructor to create and set a BufferedReader using the
+     * provided InputStream instance.
+     *
+     * @param stream the stream to read
+     */
     public InputReader(InputStream stream){
         this.reader = new BufferedReader(new InputStreamReader(stream));
     }
 
+    /**
+     * Prints out a message and waits for use input. Returns the provided
+     * input as a String. Any IOExceptions are caught and null is returned.
+     *
+     * @param msg the message to display
+     * @return a String input
+     */
     public String readString(String msg){
         try {
             System.out.print(msg);
@@ -23,6 +43,13 @@ public class InputReader {
         }
     }
 
+    /**
+     * Wrapper around ${@link #readString(String)} to read input and return
+     * the value as an Integer.
+     *
+     * @param msg the message to display
+     * @return an Integer input
+     */
     public Integer readInteger(String msg){
         try {
             return Integer.parseInt(readString(msg));
@@ -31,6 +58,13 @@ public class InputReader {
         }
     }
 
+    /**
+     * Wrapper around ${@link #readString(String)} to read input and return
+     * the value as a Double.
+     *
+     * @param msg the message to display
+     * @return an Double input
+     */
     public Double readDouble(String msg){
         try {
             return Double.parseDouble(readString(msg));
@@ -39,6 +73,13 @@ public class InputReader {
         }
     }
 
+    /**
+     * Wrapper around ${@link #readString(String)} to read input and return
+     * the value as a Float.
+     *
+     * @param msg the message to display
+     * @return a Float input
+     */
     public Float readFloat(String msg){
         try {
             return Float.parseFloat(readString(msg));
@@ -47,6 +88,13 @@ public class InputReader {
         }
     }
 
+    /**
+     * Wrapper around ${@link #readString(String)} to read input and return
+     * the value as a Boolean.
+     *
+     * @param msg the message to display
+     * @return a Boolean input
+     */
     public Boolean readBoolean(String msg){
         try {
             return Boolean.valueOf(readString(msg));

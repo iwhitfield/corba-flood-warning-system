@@ -18,12 +18,12 @@ import java.lang.reflect.Method;
  * little messy due to the need to provide a version specific to the calling class,
  * but it removes the need to change code in all component classes.
  */
-public class NamingServiceHandler {
+public class NameServiceHandler {
 
     /**
      * Start up a {@link org.slf4j.Logger} to output any information.
      */
-    private static final Logger logger = LoggerFactory.getLogger(NamingServiceHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(NameServiceHandler.class);
 
     /**
      * Binds a CORBA Object reference to the NameService with a given name. Shorthand
@@ -49,11 +49,13 @@ public class NamingServiceHandler {
      * @param clazz the class of the helper to invoke on
      * @return an {@link org.omg.CORBA.Object} reference
      */
-    public static org.omg.CORBA.Object createRef(NamingPair namingPair, Servant servant, Class<?> clazz) throws Exception {
+    public static org.omg.CORBA.Object createRef(NamePair namingPair, Servant servant, Class<?> clazz) throws Exception {
 
+        // get a reference to the servant
         org.omg.CORBA.Object ref = namingPair.getRootPOA().servant_to_reference(servant);
 
         try {
+            // return the value as a CORBA object
             return org.omg.CORBA.Object.class.cast(
                     clazz.getMethod("narrow", org.omg.CORBA.Object.class).invoke(null, ref)
             );
@@ -78,7 +80,7 @@ public class NamingServiceHandler {
     public static NamingContextExt register(ORB orb, Servant servant, String name, Class clazz) throws Exception {
 
         // retrieve a NamingPair
-        NamingPair namingPair = retrieveNameService(orb);
+        NamePair namingPair = retrieveNameService(orb);
 
         // check for null just in case
         if(namingPair == null){
@@ -104,9 +106,9 @@ public class NamingServiceHandler {
      * a pair of {@link org.omg.CosNaming.NamingContextExt} and {@link org.omg.PortableServer.POA}.
      *
      * @param orb the {@link org.omg.CORBA.ORB} to use
-     * @return a {@link NamingPair} instance
+     * @return a {@link NamePair} instance
      */
-    public static NamingPair retrieveNameService(ORB orb) throws Exception {
+    public static NamePair retrieveNameService(ORB orb) throws Exception {
 
         // get a reference to the RootPOA, and active the manager
         POA rootpoa = POAHelper.narrow(orb.resolve_initial_references(Constants.ROOT_POA));
@@ -124,14 +126,37 @@ public class NamingServiceHandler {
         }
 
         // Return the NameService and RootPOA inside of a NamingPair
-        return new NamingPair(NamingContextExtHelper.narrow(namingServiceObj), rootpoa);
+        return new NamePair(NamingContextExtHelper.narrow(namingServiceObj), rootpoa);
     }
 
-    public static <T> T retrieveObject(NamingContextExt nameService, String name, Class<T> clazz, Class<?> helperClazz) {
+    /**
+     * Retrieves a chosen object from the NameService. Returns the object cast
+     * as whichever class is specified by the caller. Uses reflection to calculate
+     * the name of the helper class, as it should never be unsafe to do so (due to
+     * the way CORBA operates behind the scenes).
+     *
+     * @param nameService the NameService instance
+     * @param name the name of the object to retrieve
+     * @param clazz the class to return as
+     * @return an instance of <T>.
+     */
+    public static <T> T retrieveObject(NamingContextExt nameService, String name, Class<T> clazz) {
         try {
+            // get name of helper class
+            Class<?> helperClazz = Class.forName(
+                    clazz.getCanonicalName().replace("floodz", "corba") + "Helper"
+            );
+
+            // find the narrow method of the helper
             Method method = helperClazz.getMethod("narrow", org.omg.CORBA.Object.class);
-            return clazz.cast(method.invoke(null, nameService.resolve_str(name)));
+
+            // get the result from the NameService
+            Object o = method.invoke(null, nameService.resolve_str(name));
+
+            // return the object cast to the desired class
+            return clazz.cast(o);
         } catch(Exception e) {
+            // error returns null
             return null;
         }
     }

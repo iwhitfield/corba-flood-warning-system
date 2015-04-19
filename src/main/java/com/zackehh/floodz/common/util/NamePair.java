@@ -4,10 +4,10 @@ import org.omg.CosNaming.NamingContextExt;
 import org.omg.PortableServer.POA;
 
 /**
- * A wrapping pair for use by {@link NamingServiceHandler} in order
+ * A wrapping pair for use by {@link NameServiceHandler} in order
  * to return a tuple of {@link org.omg.CosNaming.NamingContextExt} and {@link org.omg.PortableServer.POA}.
  */
-public class NamingPair {
+public class NamePair {
 
     /**
      * The NameService.
@@ -25,7 +25,7 @@ public class NamingPair {
      * @param namingContextExt the {@link org.omg.CosNaming.NamingContextExt} instance
      * @param rootPOA the {@link org.omg.PortableServer.POA} instance
      */
-    public NamingPair(NamingContextExt namingContextExt, POA rootPOA){
+    public NamePair(NamingContextExt namingContextExt, POA rootPOA){
         this.namingService = namingContextExt;
         this.rootPOA = rootPOA;
     }
