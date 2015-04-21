@@ -2,10 +2,10 @@ package com.zackehh.floodz.common.ui.modals;
 
 import com.zackehh.corba.common.SensorMeta;
 import com.zackehh.corba.lms.LMS;
+import com.zackehh.corba.rmc.RMCServer;
 import com.zackehh.floodz.common.ui.InterfaceUtils;
 import com.zackehh.floodz.common.ui.graphing.TreeNode;
 import com.zackehh.floodz.common.ui.graphing.TreePainter;
-import com.zackehh.floodz.rmc.RMCDriver;
 import org.abego.treelayout.NodeExtentProvider;
 import org.abego.treelayout.TreeForTreeLayout;
 import org.abego.treelayout.TreeLayout;
@@ -29,20 +29,20 @@ public class RegionModal {
     private final InterfaceUtils interfaceUtils;
 
     /**
-     * A reference to the driver behind the main GUI class.
+     * A reference to the server behind the main GUI class.
      */
-    private final RMCDriver rmcDriver;
+    private final RMCServer rmcServer;
 
     /**
      * Creates a dialog panel and displays a drawn tree
      * inside. Takes advantage of TreeLayout to do so.
      *
-     * @param rmcDriver the main driver behind the RMC
+     * @param rmcServer the main driver behind the RMC
      */
-    public RegionModal(RMCDriver rmcDriver){
+    public RegionModal(RMCServer rmcServer){
         // set required globals
         this.interfaceUtils = InterfaceUtils.getInstance();
-        this.rmcDriver = rmcDriver;
+        this.rmcServer = rmcServer;
 
         // grab the tree mapping
         TreeForTreeLayout<TreeNode> tree = getRegionTreeMapping();
@@ -95,18 +95,18 @@ public class RegionModal {
      */
     private TreeForTreeLayout<TreeNode> getRegionTreeMapping(){
         // create a TreeNode from the RMC root node
-        TreeNode root = new TreeNode(rmcDriver.name(),
-                interfaceUtils.getStringLength(rmcDriver.name()));
+        TreeNode root = new TreeNode(rmcServer.name(),
+                interfaceUtils.getStringLength(rmcServer.name()));
 
         // create a tree layout from the root
         DefaultTreeForTreeLayout<TreeNode> tree =
                 new DefaultTreeForTreeLayout<>(root);
 
         // for every LMS known to the RMC
-        for(String lmsName : rmcDriver.getKnownStations()){
+        for(String lmsName : rmcServer.getKnownStations()){
 
             // find the LMS via CORBA
-            LMS lms = rmcDriver.getConnectedLMS(lmsName);
+            LMS lms = rmcServer.getConnectedLMS(lmsName);
 
             // if there isn't one, skip it
             if(lms == null){

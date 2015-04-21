@@ -22,9 +22,9 @@ public final class Constants {
     public static final Integer DEFAULT_WARNING_LEVEL = 40;
 
     /**
-     * Constant name for a Local Monitoring System.
+     * The name of the application, to display as a title.
      */
-    public static final String LOCAL_MONITORING_STATION = "Local Monitoring Station";
+    public static final String APPLICATION_NAME = "YoloSwagz";
 
     /**
      * The NameService constant, in order to avoid any typos when retrieving.
@@ -40,10 +40,5 @@ public final class Constants {
      * The name of the RootPOA to retrieve via the CORBA service.
      */
     public static final String ROOT_POA = "RootPOA";
-
-    /**
-     * Constant name for a sensor.
-     */
-    public static final String SENSOR = "Sensor";
 
 }

@@ -2,8 +2,8 @@ package com.zackehh.floodz.common.ui.table;
 
 import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
-import com.zackehh.floodz.util.SQLiteClient;
 
+import javax.swing.table.DefaultTableModel;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Vector;
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * keep track of previously-added alerts. It is much uglier to
  * handle such a thing in the GUI itself.
  */
-public class RMCTableModel extends UneditableTableModel {
+public class RMCTableModel extends DefaultTableModel {
 
     /**
      * A map to store lms/zone->alert mappings.
@@ -36,40 +36,37 @@ public class RMCTableModel extends UneditableTableModel {
             hourFormat = new SimpleDateFormat("HH:mm:ss");
 
     /**
-     * A reference to the SQLiteClient singleton.
-     */
-    private final SQLiteClient sqLiteClient;
-
-    /**
      * Accept Vector input.
      *
      * @param data          the data Vector
      * @param columns       the columns Vector
      */
-    public RMCTableModel(SQLiteClient client, Vector<Vector<String>> data, Vector<String> columns){
+    public RMCTableModel(Vector<Vector<String>> data, Vector<String> columns){
         super(data, columns);
-        this.sqLiteClient = client;
     }
 
     /**
-     * Accept Array input.
+     * Overrides isCellEditable to always return false.
+     * This stops the user from modifying any table instances.
      *
-     * @param data          the data Array
-     * @param columns       the columns Array
+     * @param  row          the table row
+     * @param  column       the table column
+     * @return false
      */
-    @SuppressWarnings("unused")
-    public RMCTableModel(SQLiteClient client, Object[][] data, Object[] columns){
-        super(data, columns);
-        this.sqLiteClient = client;
+    @Override
+    public boolean isCellEditable(int row, int column) {
+        return false;
     }
 
     /**
-     * Simple wrapper to ${@link #addAlert(Alert, boolean)} for convenience.
+     * Flags all columns as String types in the table.
      *
-     * @param alert the alert instance
+     * @param  column       the table column
+     * @return String.class
      */
-    public void addAlert(Alert alert){
-        addAlert(alert, true);
+    @Override
+    public Class getColumnClass(int column) {
+        return String.class;
     }
 
     /**
@@ -79,9 +76,8 @@ public class RMCTableModel extends UneditableTableModel {
      * of alerts from the DB would duplicate entries.
      *
      * @param alert the Alert instance
-     * @param persist whether to persist or not
      */
-    public void addAlert(Alert alert, boolean persist) {
+    public void addAlert(Alert alert) {
         // create a Date from the timestamp
         Date d = new Date(alert.reading.time);
 
@@ -92,11 +88,6 @@ public class RMCTableModel extends UneditableTableModel {
 
         // if this is a new alert
         if(!alerts.containsKey(id)){
-
-            // persist if appropriate
-            if(persist) {
-                sqLiteClient.insertAlert(alert);
-            }
 
             // find the last index in the table
             int index = getRowCount();
@@ -115,9 +106,6 @@ public class RMCTableModel extends UneditableTableModel {
             // find the index of the alert in the table
             int index = alerts.get(id);
 
-            // update it on disk
-            sqLiteClient.updateAlert(alert);
-
             // find the currently recorded measurement
             String str = getValueAt(index, 3).toString();
 
@@ -135,16 +123,6 @@ public class RMCTableModel extends UneditableTableModel {
     }
 
     /**
-     * Simply returned <lms>:<zone> for tracking.
-     *
-     * @param meta the alert metadata
-     * @return a String identifier
-     */
-    private String generateAlertId(MetaData meta){
-        return meta.lms + ":" + meta.sensorMeta.zone;
-    }
-
-    /**
      * Removes an alert from the table. This also removes the
      * alert from the local SQLite DB, and the in-memory tracking.
      *
@@ -157,12 +135,20 @@ public class RMCTableModel extends UneditableTableModel {
         if(alerts.containsKey(id)){
             // find the alert index
             int index = alerts.get(id);
-            // remove it from the DB
-            sqLiteClient.deleteAlert(metadata);
             // remove it from the alert map
             alerts.remove(id);
             // remove the row from the table
             removeRow(index);
         }
+    }
+
+    /**
+     * Simply returned <lms>:<zone> for tracking.
+     *
+     * @param meta the alert metadata
+     * @return a String identifier
+     */
+    private String generateAlertId(MetaData meta){
+        return meta.lms + ":" + meta.sensorMeta.zone;
     }
 }

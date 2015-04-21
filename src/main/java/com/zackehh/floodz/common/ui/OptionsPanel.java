@@ -1,6 +1,6 @@
 package com.zackehh.floodz.common.ui;
 
-import com.zackehh.floodz.rmc.RMCDriver;
+import com.zackehh.corba.rmc.RMCServer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,7 +19,7 @@ public class OptionsPanel extends JPanel {
     /**
      * The RMC Driver instance for complex queries.
      */
-    private final RMCDriver rmcDriver;
+    private final RMCServer rmcServer;
 
     /**
      * The package containing the Modal dialogs.
@@ -32,10 +32,10 @@ public class OptionsPanel extends JPanel {
      * be able to provide it to the Modal classes. Simply creates
      * buttons and sets names accordingly.
      *
-     * @param rmcDriver the driver instance
+     * @param rmcServer the server instance
      */
-    public OptionsPanel(RMCDriver rmcDriver){
-        this.rmcDriver = rmcDriver;
+    public OptionsPanel(RMCServer rmcServer){
+        this.rmcServer = rmcServer;
 
         setLayout(new FlowLayout());
 
@@ -73,9 +73,9 @@ public class OptionsPanel extends JPanel {
                     // find the class of the modal
                     Class<?> clazz = Class.forName(packageName + name);
                     // find the constructor to use
-                    Constructor<?> ctor = clazz.getConstructor(RMCDriver.class);
+                    Constructor<?> ctor = clazz.getConstructor(RMCServer.class);
                     // create an instance
-                    ctor.newInstance(rmcDriver);
+                    ctor.newInstance(rmcServer);
                 } catch(Exception ex) {
                     throw new RuntimeException(ex);
                 }

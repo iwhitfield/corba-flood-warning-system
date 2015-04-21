@@ -5,7 +5,6 @@ import com.zackehh.corba.common.MetaData;
 import com.zackehh.corba.common.Reading;
 import com.zackehh.corba.common.SensorMeta;
 import com.zackehh.corba.lms.LMS;
-import com.zackehh.corba.lms.LMSHelper;
 import com.zackehh.corba.sensor.SensorHelper;
 import com.zackehh.corba.sensor.SensorPOA;
 import com.zackehh.floodz.common.util.NameServiceHandler;
@@ -23,12 +22,28 @@ import java.util.List;
  * and forward to a connected LMS. Keeps track of previous Readings
  * in case an LMS wishes to retrieve such a list at a later time.
  */
+@SuppressWarnings("FieldCanBeLocal")
 public class SensorDriver extends SensorPOA {
 
     /**
      * A list of readings to keep track of previous readings.
      */
     private final List<Reading> readingLog = new ArrayList<>();
+
+    /**
+     * The metadata of this sensor.
+     */
+    private final MetaData metadata;
+
+    /**
+     * The naming service for use when connecting.
+     */
+    private final NamingContextExt namingContextExt;
+
+    /**
+     * The CORBA ORB instance.
+     */
+    private final ORB orb;
 
     /**
      * Whether the sensor is powered on or not.
@@ -41,36 +56,9 @@ public class SensorDriver extends SensorPOA {
     private LMS lms;
 
     /**
-     * The metadata of this sensor.
-     */
-    private MetaData metadata;
-
-    /**
-     * The naming service for use when connecting.
-     */
-    private NamingContextExt namingContextExt;
-
-    /**
      * The last known reading from this sensor.
      */
     private Reading current;
-
-    /**
-     * The CORBA ORB instance.
-     */
-    private final ORB orb;
-
-    /**
-     * No-op constructor, for use when testing.
-     *
-     * @param meta the metadata of the sensor.
-     */
-    @SuppressWarnings("unused")
-    SensorDriver(MetaData meta){
-        // testing ctor
-        this.metadata = meta;
-        this.orb = null;
-    }
 
     /**
      * Connects to the assigned LMS after prompting the user for input
@@ -119,7 +107,7 @@ public class SensorDriver extends SensorPOA {
         }
 
         // find an LMS with the given name
-        lms = findLMSBinding(lmsName);
+        lms = NameServiceHandler.retrieveObject(namingContextExt, lmsName, LMS.class);
 
         // exit if none found
         if(lms == null){
@@ -221,7 +209,7 @@ public class SensorDriver extends SensorPOA {
     public boolean powerOn() {
         if(!power_on){
             try {
-                lms.registerSensor(metadata.sensorMeta.zone);
+                metadata.sensorMeta = lms.registerSensor(metadata.sensorMeta.zone);
             } catch(Exception e) {
                 System.err.println("Unable to reconnect to LMS!\n");
                 return false;
@@ -271,7 +259,10 @@ public class SensorDriver extends SensorPOA {
         try {
             lms.ping();
         } catch(Exception e) {
-            lms = findLMSBinding(metadata.lms);
+            lms = NameServiceHandler.retrieveObject(namingContextExt, metadata.lms, LMS.class);
+            if(lms != null){
+                metadata.sensorMeta = lms.registerSensor(metadata.sensorMeta.zone);
+            }
         }
 
         if(lms != null) {
@@ -288,21 +279,6 @@ public class SensorDriver extends SensorPOA {
             System.err.println("Reading is above alert level of " + metadata.sensorMeta.alert_level + " at " + measurement + "!");
         } else {
             System.out.println("Registered new reading: " + measurement);
-        }
-    }
-
-    /**
-     * Retrieves the designated LMS. Pings to ensure connection.
-     *
-     * @param lmsName the name of the LMS
-     * @return an LMS instance
-     */
-    private LMS findLMSBinding(String lmsName){
-        LMS lms = NameServiceHandler.retrieveObject(namingContextExt, lmsName, LMS.class);
-        try {
-            return lms != null && lms.ping() ? lms : null;
-        } catch(Exception e) {
-            return null;
         }
     }
 }

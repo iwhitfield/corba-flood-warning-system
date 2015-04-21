@@ -14,30 +14,6 @@ import java.util.Vector;
 public class BaseTable extends JTable {
 
     /**
-     * Initializes a new table using Vectors.
-     *
-     * @param data          the data Vector
-     * @param columns       the columns Vector
-     */
-    @SuppressWarnings("unused")
-    public BaseTable(Vector<Vector<String>> data, Vector<String> columns){
-        setModel(new UneditableTableModel(data, columns));
-        init();
-    }
-
-    /**
-     * Initializes a new table using Object Arrays.
-     *
-     * @param data          the data Array
-     * @param columns       the columns Array
-     */
-    @SuppressWarnings("unused")
-    public BaseTable(Object[][] data, Object[] columns){
-        setModel(new UneditableTableModel(data, columns));
-        init();
-    }
-
-    /**
      * Initializes a new table a custom Table Model.
      *
      * @param model         the table model

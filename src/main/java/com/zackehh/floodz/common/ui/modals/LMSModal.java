@@ -1,15 +1,13 @@
 package com.zackehh.floodz.common.ui.modals;
 
 import com.zackehh.corba.common.Alert;
-import com.zackehh.floodz.util.SQLiteClient;
-import com.zackehh.floodz.rmc.RMCDriver;
+import com.zackehh.corba.rmc.RMCServer;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Date;
-import java.util.List;
 
 /**
  * A Modal displaying a list of connected Local Monitoring Stations.
@@ -35,9 +33,9 @@ public class LMSModal {
      * a list of connection local stations. On click, loads
      * the list of current alerts being monitored by the LMS.
      *
-     * @param rmcDriver the RMC instance
+     * @param rmcServer the RMC instance
      */
-    public LMSModal(final RMCDriver rmcDriver){
+    public LMSModal(final RMCServer rmcServer){
         // create the cell renderer for JList instances
         final DefaultListCellRenderer cellRenderer = new DefaultListCellRenderer(){
             @Override
@@ -47,19 +45,17 @@ public class LMSModal {
                 return super.getListCellRendererComponent(list, value, index, false, false);
             }
         };
-        // grab a SQLiteClient instance
-        final SQLiteClient sqLiteClient = SQLiteClient.getInstance();
 
         // retrieve all LMS names
-        List<String> names = sqLiteClient.retrieveLocalNames();
+        String[] names = rmcServer.getKnownStations();
 
         // if none are found, add a warning
-        if(names.size() == 0){
-            names.add(NO_LMS_FOUND);
+        if(names.length == 0){
+            names = new String[]{ NO_LMS_FOUND };
         }
 
         // create a JList from the LMS names
-        final JList<String> list = new JList<>(names.toArray(new String[names.size()]));
+        final JList<String> list = new JList<>(names);
 
         // add a listener to the list
         list.addMouseListener(new MouseAdapter() {
@@ -77,7 +73,7 @@ public class LMSModal {
                 jDialog.dispose();
 
                 // get the state of the chosen LMS
-                Alert[] alerts = rmcDriver.getDistrictState(lms);
+                Alert[] alerts = rmcServer.getDistrictState(lms);
 
                 // object to display
                 Object component;

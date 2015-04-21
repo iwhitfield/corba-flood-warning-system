@@ -71,19 +71,31 @@ module com {
 
             module rmc {
 
-                interface RMC {
+                interface RMCClient {
+                    readonly attribute string id;
+
+                    void addAlert(in common::Alert alert);
+                    void removeAlert(in common::MetaData metadata);
+                };
+
+                interface RMCServer {
                     readonly attribute string name;
 
                     boolean ping();
 
                     void cancelAlert(in common::MetaData metadata);
                     void receiveAlert(in common::Alert alert);
+
+                    boolean registerClient(in string id);
+                    boolean removeClient(in string id);
+
                     boolean registerLMSConnection(in string name);
                     boolean removeLMSConnection(in string name);
 
                     common::Alerts getAlerts();
                     common::Alerts getDistrictState(in string district);
                     common::LMSNames getKnownStations();
+                    lms::LMS getConnectedLMS(in string name);
                 };
 
             };

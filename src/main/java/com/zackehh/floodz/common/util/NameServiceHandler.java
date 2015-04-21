@@ -50,7 +50,6 @@ public class NameServiceHandler {
      * @return an {@link org.omg.CORBA.Object} reference
      */
     public static org.omg.CORBA.Object createRef(NamePair namingPair, Servant servant, Class<?> clazz) throws Exception {
-
         // get a reference to the servant
         org.omg.CORBA.Object ref = namingPair.getRootPOA().servant_to_reference(servant);
 
@@ -63,7 +62,6 @@ public class NameServiceHandler {
             logger.debug("{}", e);
             throw new IllegalArgumentException("Unrecognised helper passed to #createRef: " + clazz.getCanonicalName());
         }
-
     }
 
     /**
@@ -78,7 +76,6 @@ public class NameServiceHandler {
      * @return a {@link org.omg.CosNaming.NamingContextExt} instance
      */
     public static NamingContextExt register(ORB orb, Servant servant, String name, Class clazz) throws Exception {
-
         // retrieve a NamingPair
         NamePair namingPair = retrieveNameService(orb);
 
@@ -109,7 +106,6 @@ public class NameServiceHandler {
      * @return a {@link NamePair} instance
      */
     public static NamePair retrieveNameService(ORB orb) throws Exception {
-
         // get a reference to the RootPOA, and active the manager
         POA rootpoa = POAHelper.narrow(orb.resolve_initial_references(Constants.ROOT_POA));
         if (rootpoa != null) {

@@ -3,9 +3,9 @@ package com.zackehh.floodz.rmc;
 import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
 import com.zackehh.corba.lms.LMS;
-import com.zackehh.corba.lms.LMSHelper;
-import com.zackehh.corba.rmc.RMCHelper;
-import com.zackehh.corba.rmc.RMCPOA;
+import com.zackehh.corba.rmc.RMCServerHelper;
+import com.zackehh.corba.rmc.RMCServerPOA;
+import com.zackehh.corba.rmc.RMCClient;
 import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.util.NameServiceHandler;
 import com.zackehh.floodz.util.SQLiteClient;
@@ -14,7 +14,9 @@ import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -24,7 +26,11 @@ import java.util.List;
  * persisted to disk using SQLite. Also keeps track of known and
  * connected LMS stations.
  */
-public class RMCDriver extends RMCPOA {
+public class RMCDriver extends RMCServerPOA {
+
+    private final HashSet<String> localStations = new HashSet<>();
+    private final HashSet<String> clientIds = new HashSet<>();
+    private final List<RMCClient> clients = new ArrayList<>();
 
     /**
      * Logging system for this class.
@@ -47,11 +53,6 @@ public class RMCDriver extends RMCPOA {
     private final ORB orb;
 
     /**
-     * The GUI client instance connected to this RMC.
-     */
-    private final RMCClient rmcClient;
-
-    /**
      * The name of this RMC. Currently only one exists, so it is
      * simply `Regional Monitoring Centre`.
      */
@@ -70,8 +71,25 @@ public class RMCDriver extends RMCPOA {
         // testing ctor
         this.nameService = null;
         this.orb = null;
-        this.rmcClient = null;
         this.sqLiteClient = SQLiteClient.getInstance();
+    }
+
+    /**
+     * Main entry point of the RMC GUI. Initializes the new window and
+     * runs the RMCDriver ORB inside a new thread.
+     *
+     * @param args the program arguments
+     */
+    public static void main(String[] args) throws SQLException {
+        // initialize the GUI
+        final RMCDriver r = new RMCDriver(args);
+
+        // start the initial loading of the existing items
+        new Thread(new Runnable() {
+            public void run() {
+                r.getEmbeddedOrb().run();
+            }
+        }).start();
     }
 
     /**
@@ -79,26 +97,30 @@ public class RMCDriver extends RMCPOA {
      * a NamingService connection and initializes an ORB instance.
      *
      * @param args the program arguments
-     * @param rmcClient the GUI client
      */
-    public RMCDriver(String[] args, RMCClient rmcClient){
+    public RMCDriver(String[] args){
         // initialise the ORB
         this.orb = ORB.init(args, null);
-
-        // store the client
-        this.rmcClient = rmcClient;
 
         // grab the SQLite singleton
         this.sqLiteClient = SQLiteClient.getInstance();
 
         try {
             // retrieve a name service
-            nameService = NameServiceHandler.register(orb, this, name, RMCHelper.class);
+            nameService = NameServiceHandler.register(orb, this, name, RMCServerHelper.class);
             if(nameService == null){
                 throw new Exception();
             }
         } catch(Exception e) {
             throw new IllegalStateException("Retrieved name service is null!");
+        }
+
+        // load all alerts from the DB
+        List<Alert> oldAlerts = sqLiteClient.retrieveAllAlerts();
+        // for each alert in the list
+        for(Alert oldAlert : oldAlerts){
+            // add it to the table
+            receiveAlert(oldAlert, false);
         }
 
         // Server has loaded up correctly
@@ -133,7 +155,7 @@ public class RMCDriver extends RMCPOA {
      * @param metaData the alert metadata
      */
     @Override
-    public synchronized void cancelAlert(MetaData metaData) {
+    public synchronized void cancelAlert(final MetaData metaData) {
         // unfortunately we cannot override #equals inside the CORBA
         // objects, so this has to be done manually, rather than a
         // combination of #indexOf and #contains.
@@ -150,8 +172,15 @@ public class RMCDriver extends RMCPOA {
                 break;
             }
         }
-        // notify the client GUI
-        rmcClient.cancelAlert(metaData);
+        // remove it from the DB
+        sqLiteClient.deleteAlert(metaData);
+        // notify client UIs
+        forAllClients(new RMCCommand() {
+            @Override
+            public void execute(RMCClient client) {
+                client.removeAlert(metaData);
+            }
+        });
     }
 
     /**
@@ -166,6 +195,10 @@ public class RMCDriver extends RMCPOA {
      */
     @Override
     public synchronized void receiveAlert(Alert alert) {
+        receiveAlert(alert, true);
+    }
+
+    public synchronized void receiveAlert(final Alert alert, boolean persist) {
         // flag for short circuit
         boolean stored = false;
         // check each alert, to ensure matches
@@ -186,12 +219,57 @@ public class RMCDriver extends RMCPOA {
         // add if new
         if(!stored){
             alerts.add(alert);
+            // persist if appropriate
+            if(persist) {
+                sqLiteClient.insertAlert(alert);
+            }
+        } else {
+            // update it on disk
+            sqLiteClient.updateAlert(alert);
         }
-        // notify GUI
-        rmcClient.addAlert(alert);
-        // log message
-        logger.info("Received alert from sensor #{} in {}",
-                alert.meta.sensorMeta.sensor, alert.meta.sensorMeta.zone);
+        // notify client UIs
+        forAllClients(new RMCCommand() {
+            @Override
+            public void execute(RMCClient client) {
+                client.addAlert(alert);
+            }
+        });
+        if(persist) {
+            // log message
+            logger.info("Received alert from sensor #{} in {}",
+                    alert.meta.sensorMeta.sensor, alert.meta.sensorMeta.zone);
+        }
+    }
+
+    @Override
+    public boolean registerClient(String id) {
+        try {
+            RMCClient binding = NameServiceHandler.retrieveObject(
+                    nameService, id, RMCClient.class);
+            if(binding == null){
+                return false;
+            }
+            clients.add(binding);
+        } catch(Exception e){
+            return false;
+        }
+        clientIds.add(id);
+        logger.info("Received connection to client: {}", id);
+        return true;
+    }
+
+    @Override
+    public boolean removeClient(String id) {
+        if(!clientIds.contains(id)){
+            return false;
+        }
+        for(int i = 0; i < clients.size(); i++){
+            if(clients.get(i).id().equals(id)){
+                clients.remove(i);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -205,7 +283,7 @@ public class RMCDriver extends RMCPOA {
     @Override
     public boolean registerLMSConnection(String name) {
         logger.info("Successfully received connection from LMS `{}`", name);
-        sqLiteClient.insertLMS(this.name, name);
+        localStations.add(name);
         return true;
     }
 
@@ -219,7 +297,8 @@ public class RMCDriver extends RMCPOA {
     @Override
     public boolean removeLMSConnection(String name) {
         logger.info("Removed connection from LMS `{}`", name);
-        sqLiteClient.deleteLMS(this.name, name);
+        sqLiteClient.deleteAlert(name, null, null);
+        localStations.remove(name);
         return true;
     }
 
@@ -259,8 +338,7 @@ public class RMCDriver extends RMCPOA {
      */
     @Override
     public String[] getKnownStations() {
-        List<String> names = sqLiteClient.retrieveLocalNames();
-        return names.toArray(new String[names.size()]);
+        return localStations.toArray(new String[localStations.size()]);
     }
 
     /**
@@ -282,4 +360,26 @@ public class RMCDriver extends RMCPOA {
         return this.orb;
     }
 
+    /**
+     * Iterates through the clients connected to the RMC.
+     *
+     * @param cmd the command to run
+     */
+    private void forAllClients(RMCCommand cmd){
+        List<RMCClient> removal = new ArrayList<>();
+        for(RMCClient c : clients){
+            try {
+                cmd.execute(c);
+            } catch(Exception e){
+                removal.add(c);
+            }
+        }
+        if(removal.size() > 0){
+            clients.removeAll(removal);
+        }
+    }
+
+    private interface RMCCommand {
+        void execute(RMCClient client);
+    }
 }

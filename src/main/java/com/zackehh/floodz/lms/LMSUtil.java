@@ -2,13 +2,9 @@ package com.zackehh.floodz.lms;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zackehh.corba.rmc.RMC;
-import com.zackehh.corba.rmc.RMCHelper;
 import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.util.Levels;
-import com.zackehh.floodz.common.util.NameServiceHandler;
 import org.apache.commons.io.IOUtils;
-import org.omg.CosNaming.NamingContextExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,27 +26,6 @@ class LMSUtil {
      * A mapper to read the resources files.
      */
     private static final ObjectMapper mapper = new ObjectMapper();
-
-    /**
-     * Retrieves an RMC from the Naming Service. Returns null if none
-     * can be found.
-     *
-     * @param namingContextExt the naming service
-     * @return an RMC instance, or null
-     */
-    public static RMC findRMCBinding(NamingContextExt namingContextExt){
-        // due to a single RMC, this is hardcoded
-        String name = Constants.REGIONAL_MONITORING_CENTRE;
-
-        try {
-            // retrieve an RMC from the NamingService
-            RMC rmc = NameServiceHandler.retrieveObject(namingContextExt, name, RMC.class);
-            // ensure we can ping the RMC, then return
-            return rmc != null && rmc.ping() ? rmc : null;
-        } catch(Exception e) {
-            return null;
-        }
-    }
 
     /**
      * Retrieves the correct Levels instance to use for the current zone entry.

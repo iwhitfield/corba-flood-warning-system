@@ -6,7 +6,8 @@ import com.zackehh.corba.common.Reading;
 import com.zackehh.corba.common.SensorMeta;
 import com.zackehh.corba.lms.LMSHelper;
 import com.zackehh.corba.lms.LMSPOA;
-import com.zackehh.corba.rmc.RMC;
+import com.zackehh.corba.rmc.RMCServer;
+import com.zackehh.floodz.common.Constants;
 import com.zackehh.floodz.common.util.Levels;
 import com.zackehh.floodz.common.util.NameServiceHandler;
 import com.zackehh.floodz.util.InputReader;
@@ -70,20 +71,12 @@ public class LMSDriver extends LMSPOA {
     /**
      * The RMC this station is connected to.
      */
-    private RMC rmc;
+    private RMCServer rmc;
 
     /**
      * The name of this LMS as decided by the user.
      */
     private String name;
-
-    /**
-     * Testing constructor to create a basic LMSDriver.
-     */
-    LMSDriver(){
-        this.levels = LMSUtil.retrieveZoneLevels();
-        this.orb = null;
-    }
 
     /**
      * Main constructor taking program args and a parsed
@@ -124,7 +117,8 @@ public class LMSDriver extends LMSPOA {
         }
 
         // obtain the Sensor reference in the Naming service
-        rmc = LMSUtil.findRMCBinding(nameService);
+        rmc = NameServiceHandler.retrieveObject(
+                nameService, Constants.REGIONAL_MONITORING_CENTRE, RMCServer.class);
 
         // test out the RMC connection
         if (rmc == null || !rmc.registerLMSConnection(name)) {
@@ -135,6 +129,7 @@ public class LMSDriver extends LMSPOA {
 
         // shutdown hook to unregister from the RMC
         Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
             public void run() {
                 try {
                     if(!rmc.removeLMSConnection(name)){
@@ -293,7 +288,11 @@ public class LMSDriver extends LMSPOA {
         try {
             rmc.ping();
         } catch(Exception e) {
-            rmc = LMSUtil.findRMCBinding(nameService);
+            rmc = NameServiceHandler.retrieveObject(
+                    nameService, Constants.REGIONAL_MONITORING_CENTRE, RMCServer.class);
+            if(rmc != null){
+                rmc.registerLMSConnection(name);
+            }
         }
 
         // figure out if the average across all sensors is above the alert_level and

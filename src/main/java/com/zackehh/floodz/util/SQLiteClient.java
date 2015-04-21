@@ -44,16 +44,6 @@ public class SQLiteClient {
         // create a sqlite connection
         db = DriverManager.getConnection("jdbc:sqlite:local.db");
 
-        // table to store connected Local Monitoring Stations
-        Statement createTableForLMS = db.createStatement();
-        createTableForLMS.executeUpdate(
-                "CREATE TABLE IF NOT EXISTS RMC " +
-                "(ID    TEXT    PRIMARY KEY," +
-                " NAME  TEXT    NOT NULL," +
-                " LMS   TEXT    NOT NULL)"
-        );
-        createTableForLMS.closeOnCompletion();
-
         // table to store received Alerts coming from an LMS
         Statement createTableForAlerts = db.createStatement();
         createTableForAlerts.executeUpdate(
@@ -63,8 +53,7 @@ public class SQLiteClient {
                 " TIME          DATE        NOT NULL," +
                 " ZONE          CHAR(26)    NOT NULL," +
                 " SENSOR        CHAR(4)     NOT NULL," +
-                " MEASUREMENT   INT         NOT NULL," +
-                " FOREIGN KEY(LMS) REFERENCES RMC(LMS))"
+                " MEASUREMENT   INT         NOT NULL)"
         );
         createTableForAlerts.closeOnCompletion();
     }
@@ -89,55 +78,57 @@ public class SQLiteClient {
     }
 
     /**
-     * Removes an Alert record from the local database. Technically this
-     * could remove more than one, but realistically there should only ever
-     * be one matching pattern.
+     * Removes an Alert record from the local database.
      *
      * @param metadata the Alert metadata
      * @return true if removed successfully
      */
     public synchronized boolean deleteAlert(MetaData metadata) {
-        try {
-            // create a statement
-            PreparedStatement deleteStatement = db.prepareStatement(
-                "DELETE FROM ALERTS WHERE LMS=? AND ZONE=? AND SENSOR=?;"
-            );
-
-            // assign statement arguments
-            deleteStatement.setString(1, metadata.lms);
-            deleteStatement.setString(2, metadata.sensorMeta.zone);
-            deleteStatement.setString(3, metadata.sensorMeta.sensor);
-
-            // execute the update
-            deleteStatement.executeUpdate();
-
-            // block until completion
-            deleteStatement.closeOnCompletion();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
+        return deleteAlert(metadata.lms, metadata.sensorMeta.zone, metadata.sensorMeta.sensor);
     }
 
     /**
-     * Removes an LMS record from the local database. This is called when
-     * an LMS disconnects from an RMC (i.e. LMS termination).
+     * Removes all Alert records from the local database for the given
+     * LMS. This is called when an LMS is unregistered from the DB.
      *
-     * @param rmc the name of the RMC
-     * @param lms the name of the LMS
-     * @return true if successful
+     * @param lms the LMS name
+     * @param zone the zone name
+     * @param sensor the sensor name
+     * @return true if removed successfully
      */
-    public synchronized boolean deleteLMS(String rmc, String lms) {
+    public synchronized boolean deleteAlert(String lms, String zone, String sensor) {
         try {
-            // create a statement
-            PreparedStatement deleteStatement = db.prepareStatement(
-                "DELETE FROM RMC WHERE NAME=? AND LMS=?;"
-            );
+            // query construction
+            String query = "DELETE FROM ALERTS WHERE LMS=?";
 
-            // set the statement arguments
-            deleteStatement.setString(1, rmc);
-            deleteStatement.setString(2, lms);
+            // append any zone
+            if(zone != null){
+                query += " AND ZONE=?";
+            }
+
+            // append any sensor
+            if(sensor != null){
+                query += " AND SENSOR=?";
+            }
+
+            // finish statement
+            query += ";";
+
+            // create a statement
+            PreparedStatement deleteStatement = db.prepareStatement(query);
+
+            // assign statement arguments
+            deleteStatement.setString(1, lms);
+
+            // set the zone param
+            if(zone != null){
+                deleteStatement.setString(2, zone);
+            }
+
+            // set the sensor param
+            if(sensor != null){
+                deleteStatement.setString(zone == null ? 2 : 3, sensor);
+            }
 
             // execute the update
             deleteStatement.executeUpdate();
@@ -182,40 +173,6 @@ public class SQLiteClient {
             insertStatement.executeUpdate();
 
             // block until persisted
-            insertStatement.closeOnCompletion();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Inserts a new LMS record into the database. Stores the following:
-     *
-     * - Name of the RMC
-     * - LMS name
-     *
-     * @param rmc the name of the RMC
-     * @param lms the name of the LMS
-     * @return true if successful
-     */
-    public synchronized boolean insertLMS(String rmc, String lms) {
-        try {
-            // create a statement
-            PreparedStatement insertStatement = db.prepareStatement(
-                "INSERT INTO RMC (NAME,LMS)" +
-                "VALUES (?,?);"
-            );
-
-            // set the statement arguments
-            insertStatement.setString(1, rmc);
-            insertStatement.setString(2, lms);
-
-            // start the update
-            insertStatement.executeUpdate();
-
-            // block until completion
             insertStatement.closeOnCompletion();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -271,6 +228,9 @@ public class SQLiteClient {
         List<Alert> alertLog = new ArrayList<>();
 
         try {
+            // prune old events
+            pruneOldAlerts();
+
             // create a statement
             Statement alertQueryStatement = db.createStatement();
 
@@ -307,40 +267,24 @@ public class SQLiteClient {
     }
 
     /**
-     * Retrieves a list of currently tracked Local Monitoring Stations. This is a
-     * list of the station names in order to provide them for lookups later.
-     *
-     * @return a list of LMS names
+     * Removes all alerts received over an hour ago in order to
+     * cover the case in which an LMS becomes disconnected without
+     * cancelling their alerts.
      */
-    public List<String> retrieveLocalNames() {
-        // initialize an empty List<Alert>
-        List<String> lmsNames = new ArrayList<>();
+    public void pruneOldAlerts() throws SQLException {
+        // create a statement
+        PreparedStatement deleteStatement = db.prepareStatement(
+            "DELETE FROM ALERTS WHERE TIME < ?"
+        );
 
-        try {
-            // create a new statement
-            Statement lmsNamesStatement = db.createStatement();
+        // assign statement arguments
+        deleteStatement.setDate(1, new Date(System.currentTimeMillis() - (1000 * 60 * 60)));
 
-            // query the database for distinct LMS names
-            ResultSet resultSet = lmsNamesStatement
-                    .executeQuery("SELECT DISTINCT LMS FROM RMC;");
+        // execute the update
+        deleteStatement.executeUpdate();
 
-            // for each row returned
-            while (resultSet.next()) {
-                // add the name to the list
-                lmsNames.add(resultSet.getString("LMS"));
-            }
-
-            // close the result set
-            resultSet.close();
-
-            // block until completion
-            lmsNamesStatement.closeOnCompletion();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        // return the list of names
-        return lmsNames;
+        // block until completion
+        deleteStatement.closeOnCompletion();
     }
 
 }
