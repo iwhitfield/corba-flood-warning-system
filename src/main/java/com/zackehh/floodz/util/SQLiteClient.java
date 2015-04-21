@@ -271,7 +271,7 @@ public class SQLiteClient {
      * cover the case in which an LMS becomes disconnected without
      * cancelling their alerts.
      */
-    public void pruneOldAlerts() throws SQLException {
+    private void pruneOldAlerts() throws SQLException {
         // create a statement
         PreparedStatement deleteStatement = db.prepareStatement(
             "DELETE FROM ALERTS WHERE TIME < ?"

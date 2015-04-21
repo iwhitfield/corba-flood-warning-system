@@ -1,5 +1,6 @@
 package com.zackehh.floodz.common.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -11,12 +12,12 @@ public class Levels {
     /**
      * The level that alerts are triggered at.
      */
-    private Integer alert_level;
+    private final Integer alert_level;
 
     /**
      * The level that warnings are triggered at, if configured.
      */
-    private Integer warning_level;
+    private final Integer warning_level;
 
     /**
      * Default constructor, allowing for an alert level and a
@@ -27,6 +28,7 @@ public class Levels {
      * @param alert_level the alert level threshold
      * @param warning_level the warning level threshold
      */
+    @JsonCreator
     public Levels(@JsonProperty("alert_level") int alert_level,
                   @JsonProperty("warning_level") int warning_level){
         this.alert_level = alert_level;

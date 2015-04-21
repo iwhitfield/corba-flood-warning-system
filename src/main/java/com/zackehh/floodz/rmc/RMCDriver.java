@@ -98,7 +98,7 @@ public class RMCDriver extends RMCServerPOA {
      *
      * @param args the program arguments
      */
-    public RMCDriver(String[] args){
+    private RMCDriver(String[] args){
         // initialise the ORB
         this.orb = ORB.init(args, null);
 
@@ -188,7 +188,7 @@ public class RMCDriver extends RMCServerPOA {
      * of known alerts and then notifies the GUI of the change.
      *
      * In the case the alert has been registered, update the existing
-     * alert in case the measurement has increased/descreased in order
+     * alert in case the measurement has increased/decreased in order
      * to accurately reflect the current status.
      *
      * @param alert the alert to register
@@ -198,6 +198,13 @@ public class RMCDriver extends RMCServerPOA {
         receiveAlert(alert, true);
     }
 
+    /**
+     * Saving an alert can take an optional boolean to specify whether
+     * to persist the alert to a local DB or not.
+     *
+     * @param alert the alert to save
+     * @param persist whether to persist or not
+     */
     public synchronized void receiveAlert(final Alert alert, boolean persist) {
         // flag for short circuit
         boolean stored = false;
@@ -391,7 +398,7 @@ public class RMCDriver extends RMCServerPOA {
                 // grab their "wanted" list
                 String[] namesArr = c.getLMSList();
                 // null == all, or if their list is this LMS
-                if(namesArr == null || Arrays.asList(c.getLMSList()).contains(name)){
+                if(namesArr.length == 0 || Arrays.asList(c.getLMSList()).contains(name)){
                     // execute the passed in command
                     cmd.execute(c);
                 }

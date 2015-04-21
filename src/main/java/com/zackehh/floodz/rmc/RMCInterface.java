@@ -166,7 +166,7 @@ public class RMCInterface extends RMCClientPOA {
     @Override
     public String[] getLMSList(){
         if(lmsNames == null){
-            return null;
+            return new String[0];
         }
         return lmsNames.toArray(new String[lmsNames.size()]);
     }

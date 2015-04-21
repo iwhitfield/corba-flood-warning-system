@@ -23,7 +23,7 @@ import java.util.List;
  * in case an LMS wishes to retrieve such a list at a later time.
  */
 @SuppressWarnings("FieldCanBeLocal")
-public class SensorDriver extends SensorPOA {
+class SensorDriver extends SensorPOA {
 
     /**
      * A list of readings to keep track of previous readings.

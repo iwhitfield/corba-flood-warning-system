@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * Sensor and forward them to an RMC when appropriate. Keeps an
  * internal log of alerts and zone->sensor mappings.
  */
-public class LMSDriver extends LMSPOA {
+class LMSDriver extends LMSPOA {
 
     /**
      * Logging instance via log4j.

@@ -48,11 +48,10 @@ public class InterfaceUtils {
      * @param c the main Container
      * @return the instance
      */
-    public static InterfaceUtils setup(Container c) {
+    public static void setup(Container c) {
         if (instance == null) {
             instance = new InterfaceUtils(c);
         }
-        return instance;
     }
 
     /**

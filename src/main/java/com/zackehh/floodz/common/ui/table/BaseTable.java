@@ -4,7 +4,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableModel;
-import java.util.Vector;
 
 /**
  * A simple class to represent a list of bids associated with
