@@ -11,6 +11,7 @@ import com.zackehh.floodz.common.ui.OptionsPanel;
 import com.zackehh.floodz.common.ui.table.BaseTable;
 import com.zackehh.floodz.common.ui.table.RMCTableModel;
 import com.zackehh.floodz.common.util.NameServiceHandler;
+import com.zackehh.floodz.util.InputReader;
 import org.omg.CORBA.ORB;
 import org.omg.CosNaming.NamingContextExt;
 
@@ -19,6 +20,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.*;
+import java.util.List;
 
 /**
  * The LMS client, basically a command line listener. There is
@@ -28,6 +30,8 @@ import java.util.*;
  */
 @SuppressWarnings("FieldCanBeLocal")
 public class RMCInterface extends RMCClientPOA {
+
+    private final List<String> lmsNames;
 
     /**
      * The CORBA ORB instance.
@@ -69,14 +73,29 @@ public class RMCInterface extends RMCClientPOA {
      */
     private RMCInterface(String[] args) {
         // initialise the ORB
-        orb = ORB.init(args, null);
-        id = UUID.randomUUID().toString();
+        this.orb = ORB.init(args, null);
+
+        // create a new InputReader
+        InputReader console = new InputReader(System.in);
+
+        // check for tracked local stations
+        List<String> names = console.readList("Enter a CSV set of LMS to register to (or 'all' for all alerts): ");
+
+        // check for needed null (null represents no filter)
+        if(names != null && names.size() == 1 && "all".equals(names.get(0))){
+            this.lmsNames = null;
+        } else {
+            this.lmsNames = names;
+        }
+
+        // set up client id
+        this.id = UUID.randomUUID().toString();
 
         // Retrieve a name service
         NamingContextExt nameService;
         try {
             // Retrieve a name service
-            nameService = NameServiceHandler.register(orb, this, id, RMCClientHelper.class);
+            nameService = NameServiceHandler.register(this.orb, this, this.id, RMCClientHelper.class);
             if(nameService == null){
                 throw new Exception();
             }
@@ -142,6 +161,14 @@ public class RMCInterface extends RMCClientPOA {
     @Override
     public void removeAlert(MetaData metadata) {
         rmcTableModel.removeAlert(metadata);
+    }
+
+    @Override
+    public String[] getLMSList(){
+        if(lmsNames == null){
+            return null;
+        }
+        return lmsNames.toArray(new String[lmsNames.size()]);
     }
 
     /**

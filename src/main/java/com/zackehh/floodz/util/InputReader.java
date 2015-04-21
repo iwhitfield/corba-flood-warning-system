@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * A simple handler for reading input from a designated InputStream. Used often
@@ -98,6 +100,21 @@ public class InputReader {
     public Boolean readBoolean(String msg){
         try {
             return Boolean.valueOf(readString(msg));
+        } catch (NumberFormatException nfe) {
+            return null;
+        }
+    }
+
+    /**
+     * Wrapper around ${@link #readString(String)} to read input and return
+     * the value as a List.
+     *
+     * @param msg the message to display
+     * @return a List input
+     */
+    public List<String> readList(String msg){
+        try {
+            return Arrays.asList(readString(msg).split(","));
         } catch (NumberFormatException nfe) {
             return null;
         }

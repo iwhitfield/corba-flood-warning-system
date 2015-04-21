@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
@@ -29,7 +30,6 @@ import java.util.List;
 public class RMCDriver extends RMCServerPOA {
 
     private final HashSet<String> localStations = new HashSet<>();
-    private final HashSet<String> clientIds = new HashSet<>();
     private final List<RMCClient> clients = new ArrayList<>();
 
     /**
@@ -175,7 +175,7 @@ public class RMCDriver extends RMCServerPOA {
         // remove it from the DB
         sqLiteClient.deleteAlert(metaData);
         // notify client UIs
-        forAllClients(new RMCCommand() {
+        forAllClients(metaData.lms, new RMCCommand() {
             @Override
             public void execute(RMCClient client) {
                 client.removeAlert(metaData);
@@ -228,7 +228,7 @@ public class RMCDriver extends RMCServerPOA {
             sqLiteClient.updateAlert(alert);
         }
         // notify client UIs
-        forAllClients(new RMCCommand() {
+        forAllClients(alert.meta.lms, new RMCCommand() {
             @Override
             public void execute(RMCClient client) {
                 client.addAlert(alert);
@@ -241,29 +241,45 @@ public class RMCDriver extends RMCServerPOA {
         }
     }
 
+    /**
+     * Registers a new client connection with this RMC. Retrieves
+     * the client from the NameService and places it in a list of
+     * connected clients.
+     *
+     * @param id the id of the connecting client
+     * @return true upon valid conncetion
+     */
     @Override
     public boolean registerClient(String id) {
         try {
+            // look up the client
             RMCClient binding = NameServiceHandler.retrieveObject(
                     nameService, id, RMCClient.class);
+            // if not found, false
             if(binding == null){
                 return false;
             }
+            // add to client list
             clients.add(binding);
         } catch(Exception e){
             return false;
         }
-        clientIds.add(id);
         logger.info("Received connection to client: {}", id);
         return true;
     }
 
+    /**
+     * Removes a client connection, via id. Just removes
+     * the designated client from the client list.
+     *
+     * @param id the id of the client
+     * @return true upon removal
+     */
     @Override
-    public boolean removeClient(String id) {
-        if(!clientIds.contains(id)){
-            return false;
-        }
+    public synchronized boolean removeClient(String id) {
+        // loop all clients
         for(int i = 0; i < clients.size(); i++){
+            // if the client ids match, remove
             if(clients.get(i).id().equals(id)){
                 clients.remove(i);
                 return true;
@@ -274,8 +290,8 @@ public class RMCDriver extends RMCServerPOA {
 
     /**
      * Registers a new LMS connection with the driver. Persists
-     * the name of the LMS as an entry in the SQLite DB in order
-     * to keep (persistent) track of the connected stations.
+     * the name of the LMS as an entry in a set in order to keep
+     * track of the connected stations.
      *
      * @param name the name of the LMS
      * @return true on success
@@ -290,6 +306,7 @@ public class RMCDriver extends RMCServerPOA {
     /**
      * Removes an LMS connection, and updates the SQLite DB
      * in order to keep track of which stations are connected.
+     * We do not want to hold a list of stale connections.
      *
      * @param name the name of the LMS
      * @return true on success
@@ -365,21 +382,43 @@ public class RMCDriver extends RMCServerPOA {
      *
      * @param cmd the command to run
      */
-    private void forAllClients(RMCCommand cmd){
+    private void forAllClients(String name, RMCCommand cmd){
+        // list to hold unreachable clients
         List<RMCClient> removal = new ArrayList<>();
+        // for each client
         for(RMCClient c : clients){
             try {
-                cmd.execute(c);
+                // grab their "wanted" list
+                String[] namesArr = c.getLMSList();
+                // null == all, or if their list is this LMS
+                if(namesArr == null || Arrays.asList(c.getLMSList()).contains(name)){
+                    // execute the passed in command
+                    cmd.execute(c);
+                }
             } catch(Exception e){
+                // add for removal
                 removal.add(c);
             }
         }
+        // if removal has entries
         if(removal.size() > 0){
+            // remove them all
             clients.removeAll(removal);
         }
     }
 
+    /**
+     * A very simple interface class in order to be able
+     * to pass commands to {@link #forAllClients(String, RMCCommand)}.
+     */
     private interface RMCCommand {
+
+        /**
+         * Execute the given function, passing in the current
+         * client for an operation.
+         *
+         * @param client the client instance
+         */
         void execute(RMCClient client);
     }
 }
