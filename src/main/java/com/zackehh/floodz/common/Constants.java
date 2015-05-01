@@ -32,6 +32,11 @@ public final class Constants {
     public static final String NAME_SERVICE = "NameService";
 
     /**
+     * The name of the SQLite database to use.
+     */
+    public static final String DATABASE_NAME = "rmc_local.db";
+
+    /**
      * The name of the (singular) Regional Monitoring Centre, to avoid typos.
      */
     public static final String REGIONAL_MONITORING_CENTRE = "Regional Monitoring Centre";

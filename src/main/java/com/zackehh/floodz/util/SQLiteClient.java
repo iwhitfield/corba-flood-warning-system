@@ -4,6 +4,7 @@ import com.zackehh.corba.common.Alert;
 import com.zackehh.corba.common.MetaData;
 import com.zackehh.corba.common.Reading;
 import com.zackehh.corba.common.SensorMeta;
+import com.zackehh.floodz.common.Constants;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -42,18 +43,18 @@ public class SQLiteClient {
         }
 
         // create a sqlite connection
-        db = DriverManager.getConnection("jdbc:sqlite:local.db");
+        db = DriverManager.getConnection("jdbc:sqlite:" + Constants.DATABASE_NAME);
 
         // table to store received Alerts coming from an LMS
         Statement createTableForAlerts = db.createStatement();
         createTableForAlerts.executeUpdate(
-                "CREATE TABLE IF NOT EXISTS ALERTS " +
-                "(ID            INTEGER     PRIMARY KEY," +
-                " LMS           TEXT        NOT NULL," +
-                " TIME          DATE        NOT NULL," +
-                " ZONE          CHAR(26)    NOT NULL," +
-                " SENSOR        CHAR(4)     NOT NULL," +
-                " MEASUREMENT   INT         NOT NULL)"
+            "CREATE TABLE IF NOT EXISTS ALERTS " +
+            "(ID            INTEGER     PRIMARY KEY," +
+            " LMS           TEXT        NOT NULL," +
+            " TIME          DATE        NOT NULL," +
+            " ZONE          CHAR(26)    NOT NULL," +
+            " SENSOR        CHAR(4)     NOT NULL," +
+            " MEASUREMENT   INT         NOT NULL)"
         );
         createTableForAlerts.closeOnCompletion();
     }
