@@ -94,7 +94,7 @@ module com {
                     boolean registerLMSConnection(in string name);
                     boolean removeLMSConnection(in string name);
 
-                    common::Alerts getAlerts();
+                    common::Alerts getAlerts(in string id);
                     common::Alerts getDistrictState(in string district);
                     common::LMSNames getKnownStations();
                     lms::LMS getConnectedLMS(in string name);

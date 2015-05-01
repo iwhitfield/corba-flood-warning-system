@@ -82,6 +82,7 @@ public class RegionModal {
         dialog.setLocationRelativeTo(null);
         dialog.setModal(true);
         dialog.setResizable(false);
+        dialog.setTitle("Region Overview");
         dialog.setVisible(true);
     }
 

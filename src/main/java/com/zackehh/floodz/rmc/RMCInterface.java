@@ -172,7 +172,9 @@ public class RMCInterface extends RMCClientPOA {
     }
 
     /**
-     *
+     * A card to display the data to the user... Simply a quick layout
+     * to provide a card to store alerts and a card to add arbitrary
+     * buttons.
      */
     private class RegionalInterface extends JFrame {
 
@@ -226,16 +228,17 @@ public class RMCInterface extends RMCClientPOA {
             // disable resize
             setResizable(false);
 
+            // display!
+            setVisible(true);
+
             // load all alerts from the DB
-            java.util.List<Alert> oldAlerts = Arrays.asList(rmcServer.getAlerts());
+            List<Alert> oldAlerts = Arrays.asList(rmcServer.getAlerts(id));
+
             // for each alert in the list
             for(Alert oldAlert : oldAlerts){
                 // add it to the table
                 rmcTableModel.addAlert(oldAlert);
             }
-
-            // display!
-            setVisible(true);
         }
 
         /**

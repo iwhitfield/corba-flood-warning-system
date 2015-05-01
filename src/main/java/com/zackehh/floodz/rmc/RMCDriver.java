@@ -29,7 +29,14 @@ import java.util.List;
  */
 public class RMCDriver extends RMCServerPOA {
 
+    /**
+     * Known local stations.
+     */
     private final HashSet<String> localStations = new HashSet<>();
+
+    /**
+     * The list of connected clients.
+     */
     private final List<RMCClient> clients = new ArrayList<>();
 
     /**
@@ -332,8 +339,27 @@ public class RMCDriver extends RMCServerPOA {
      * @return an array of Alerts
      */
     @Override
-    public Alert[] getAlerts(){
-        return alerts.toArray(new Alert[alerts.size()]);
+    public Alert[] getAlerts(String id){
+        List<String> lmsList = null;
+
+        // find the client lms list
+        for(RMCClient c : clients){
+            if(id.equals(c.id())){
+                lmsList = Arrays.asList(c.getLMSList());
+                break;
+            }
+        }
+
+        // add all matching alerts to the list
+        List<Alert> clientAlerts = new ArrayList<>();
+        for(Alert alert : alerts){
+            if(lmsList == null || lmsList.contains(alert.meta.lms)){
+                clientAlerts.add(alert);
+            }
+        }
+
+        // return the list of alerts
+        return clientAlerts.toArray(new Alert[clientAlerts.size()]);
     }
 
     /**

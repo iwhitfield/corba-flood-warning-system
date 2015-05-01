@@ -24,7 +24,7 @@ public final class Constants {
     /**
      * The name of the application, to display as a title.
      */
-    public static final String APPLICATION_NAME = "YoloSwagz";
+    public static final String APPLICATION_NAME = "Flood Warning System";
 
     /**
      * The NameService constant, in order to avoid any typos when retrieving.
